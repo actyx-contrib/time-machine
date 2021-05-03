@@ -36,6 +36,7 @@ export function TimeMachineComponent(): JSX.Element {
         query: tagsFromString(tags),
       },
       (event, metadata) => {
+        console.log('First Entry: ' + metadata.lamport)
         setStartTimeMillis(metadata.timestampMicros / 1000)
       },
     )
@@ -44,6 +45,7 @@ export function TimeMachineComponent(): JSX.Element {
         query: tagsFromString(tags),
       },
       (event, metadata) => {
+        console.log('Last Entry: ' + metadata.lamport)
         setEndTimeMillis(metadata.timestampMicros / 1000)
       },
     )
@@ -145,14 +147,11 @@ export function TimeMachineComponent(): JSX.Element {
                   value={value}
                   className="slider"
                   id="myRange"
-                  onChange={({ target }) =>
-                    addSourceToOffsetMap(
-                      setSelectedEventOffsetMap,
-                      selectedEventOffsetMap,
-                      sid,
-                      target,
+                  onChange={({ target }) => {
+                    setSelectedEventOffsetMap(
+                      setOffsetMapValue(selectedEventOffsetMap, sid, +target.value),
                     )
-                  }
+                  }}
                 />
               </div>
             </div>
@@ -208,22 +207,25 @@ function reduceTwinStateFromEvents(
   )
 }
 
-function addSourceToOffsetMap(
-  setSelectedEventOffsetMap: React.Dispatch<React.SetStateAction<{ readonly [x: string]: number }>>,
-  selectedEventOffsetMap: { readonly [x: string]: number },
-  sid: string,
-  target: EventTarget & HTMLInputElement,
-): void {
-  return setSelectedEventOffsetMap({
-    ...selectedEventOffsetMap,
-    [sid]: +target.value,
-  })
-}
-
 function tagsFromString(tags: string) {
   try {
     return Tags(...(tags || 'unknown').split(' '))
   } catch (exception) {
     return Tags('unknown')
   }
+}
+/*
+function delimitOffsetsByTimestamp(limitMillis: number, offsets: OffsetMap, pond: Pond ) : Promise<OffsetMap> {
+  Object.entries(offsets).map(([sid, events]) => {
+    pond.events().queryAllKnownChunked({query: tagsFromString(tags)}, 1, (chunk) => {
+      if(chunk.events[0].meta.timestampMicros > limitMillis){
+
+      }
+    })
+  })
+  
+}
+*/
+function setOffsetMapValue(offsets: OffsetMap, sid: string, events: number): OffsetMap {
+  return { ...offsets, [sid]: events }
 }
