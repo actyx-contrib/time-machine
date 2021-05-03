@@ -13,7 +13,8 @@ export const TimeMachine = (): JSX.Element => {
 
   const [upperBound, setUpperBound] = useState<OffsetMap>()
   const [startTime, setStartTime] = useState<number>()
-  const [currentTime, setCurrentTime] = useState<number>(Date.now())
+  const [endTime, setEndTime] = useState<number>()
+  const [currentTime, setCurrentTime] = useState<number>(endTime ? endTime : Date.now())
   const [selectedEventOffsetMap, setSelectedEventOffsetMap] = useState<OffsetMap>({})
 
   const [twinState, setTwinState] = useState({})
@@ -30,15 +31,15 @@ export const TimeMachine = (): JSX.Element => {
 
   //Update Timespan for Slider each time the tags are changed
   React.useEffect(() => {
-    console.log('Timecheck started')
-    console.log(tags)
     if (!upperBound) {
       return
     }
     const sidsWithOffsetsSetTo1 = sidsWithOffset1(upperBound)
-    console.log(sidsWithOffsetsSetTo1)
     getEarliestEventMicros(pond, sidsWithOffsetsSetTo1, tags).then((earliestEventMicros) =>
       setStartTime(earliestEventMicros),
+    )
+    getLatestEventMicros(pond, sidsWithOffsetsSetTo1, tags).then((lastestEventMicros) =>
+      setEndTime(lastestEventMicros),
     )
   }, [tags, upperBound])
 
@@ -153,7 +154,7 @@ export const TimeMachine = (): JSX.Element => {
               style={{ width: 350 }}
               type="range"
               min={startTime ? startTime / 1000 : 0}
-              max={Date.now()}
+              max={endTime ? endTime / 1000 : Date.now()}
               value={currentTime}
               className="slider"
               id="myRange"
@@ -226,6 +227,28 @@ function getEarliestEventMicros(
       ),
     )
     .then((earliestEvent) => earliestEvent.meta.timestampMicros)
+}
+
+function getLatestEventMicros(
+  pond: Pond,
+  offsets: {
+    readonly [x: string]: number
+  },
+  tags: string,
+): Promise<number> {
+  return pond
+    .events()
+    .queryKnownRange({
+      upperBound: offsets,
+      order: 'Desc',
+      query: tagsFromString(tags),
+    })
+    .then((events) =>
+      events.reduce((previous, current) =>
+        current.meta.timestampMicros > previous.meta.timestampMicros ? current : previous,
+      ),
+    )
+    .then((latestEvent) => latestEvent.meta.timestampMicros)
 }
 
 function tagsFromString(tags: string) {
