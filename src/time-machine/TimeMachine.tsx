@@ -6,15 +6,15 @@ const defaultOnEvent = `(state, event, metadata) => {
   return state
 }`
 
-export const TimeMachine = (): JSX.Element => {
+export function TimeMachineComponent() {
   const [tags, setTags] = React.useState('oven-fish:oven_1')
   const [initState, setInitState] = React.useState('{"id": 1}')
   const [onEventFunctionCode, setOnEventFunction] = React.useState(defaultOnEvent)
 
   const [upperBound, setUpperBound] = useState<OffsetMap>()
-  const [startTime, setStartTime] = useState<number>()
-  const [endTime, setEndTime] = useState<number>()
-  const [currentTime, setCurrentTime] = useState<number>(endTime ? endTime : Date.now())
+  const [startTimeMillis, setStartTimeMillis] = useState<number>()
+  const [endTimeMillis, setEndTimeMillis] = useState<number>()
+  const [currentTimeMillis, setCurrentTimeMillis] = useState<number>(0)
   const [selectedEventOffsetMap, setSelectedEventOffsetMap] = useState<OffsetMap>({})
 
   const [twinState, setTwinState] = useState({})
@@ -36,10 +36,10 @@ export const TimeMachine = (): JSX.Element => {
     }
     const sidsWithOffsetsSetTo1 = sidsWithOffset1(upperBound)
     getEarliestEventMicros(pond, sidsWithOffsetsSetTo1, tags).then((earliestEventMicros) =>
-      setStartTime(earliestEventMicros),
+      setStartTimeMillis(earliestEventMicros / 1000),
     )
     getLatestEventMicros(pond, sidsWithOffsetsSetTo1, tags).then((lastestEventMicros) =>
-      setEndTime(lastestEventMicros),
+      setEndTimeMillis(lastestEventMicros / 1000),
     )
   }, [tags, upperBound])
 
@@ -75,8 +75,12 @@ export const TimeMachine = (): JSX.Element => {
     )
   }, [selectedEventOffsetMap])
 
-  if (!upperBound) {
+  if (!upperBound || !startTimeMillis || !endTimeMillis) {
     return <div>loading...</div>
+  }
+
+  if (!currentTimeMillis) {
+    setCurrentTimeMillis(endTimeMillis)
   }
 
   return (
@@ -148,17 +152,19 @@ export const TimeMachine = (): JSX.Element => {
 
       <div>
         <div style={{ display: 'flex' }}>
-          <span style={{ width: 170 }}>Time Machine {new Date(currentTime).toLocaleString()}</span>
+          <span style={{ width: 170 }}>
+            Time Machine {new Date(currentTimeMillis).toLocaleString()}
+          </span>
           <div className="slidecontainer">
             <input
               style={{ width: 350 }}
               type="range"
-              min={startTime ? startTime / 1000 : 0}
-              max={endTime ? endTime / 1000 : Date.now()}
-              value={currentTime}
+              min={startTimeMillis ? startTimeMillis : 0}
+              max={endTimeMillis ? endTimeMillis : Date.now()}
+              value={currentTimeMillis}
               className="slider"
               id="myRange"
-              onChange={({ target }) => setCurrentTime(+target.value)}
+              onChange={({ target }) => setCurrentTimeMillis(+target.value)}
             />
           </div>
         </div>
@@ -166,6 +172,7 @@ export const TimeMachine = (): JSX.Element => {
     </div>
   )
 }
+
 function reduceTwinStateFromEvents(
   pond: Pond,
   selectedEventOffsetMap: { readonly [x: string]: number },
