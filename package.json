@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "ui:time-machine:start": "parcel src/time-machine/index.html --out-dir build/time-machine/debug",
-    "ui:time-machine:build": "parcel build src/time-machine/index.html --out-dir src/time-machine/release --public-url ./",
-    "ui:time-machine:package": "ax apps package src/time-machine/ax-manifest.yml"
+    "start": "parcel src/time-machine/index.html --out-dir build/time-machine/debug",
+    "build": "parcel build src/time-machine/index.html --out-dir src/time-machine/release --public-url ./",
+    "package": "ax apps package src/time-machine/ax-manifest.yml"
   },
   "keywords": [],
   "author": "",
