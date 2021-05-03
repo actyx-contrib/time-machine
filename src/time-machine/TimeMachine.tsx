@@ -6,7 +6,7 @@ const defaultOnEvent = `(state, event, metadata) => {
   return state
 }`
 
-export function TimeMachineComponent() {
+export function TimeMachineComponent(): JSX.Element {
   const [tags, setTags] = React.useState('oven-fish:oven_1')
   const [initState, setInitState] = React.useState('{"id": 1}')
   const [onEventFunctionCode, setOnEventFunction] = React.useState(defaultOnEvent)
@@ -29,19 +29,29 @@ export function TimeMachineComponent() {
     }
   }, [])
 
-  //Update Timespan for Slider each time the tags are changed
+  //Reload the time boundaries whenever an earlier/later event arrives or the tags change
   React.useEffect(() => {
-    if (!upperBound) {
-      return
+    const cancelSubscriptionOnEarlist = pond.events().observeEarliest(
+      {
+        query: tagsFromString(tags),
+      },
+      (event, metadata) => {
+        setStartTimeMillis(metadata.timestampMicros / 1000)
+      },
+    )
+    const cancelSubscriptionOnLatest = pond.events().observeLatest(
+      {
+        query: tagsFromString(tags),
+      },
+      (event, metadata) => {
+        setEndTimeMillis(metadata.timestampMicros / 1000)
+      },
+    )
+    return () => {
+      cancelSubscriptionOnEarlist()
+      cancelSubscriptionOnLatest()
     }
-    const sidsWithOffsetsSetTo1 = sidsWithOffset1(upperBound)
-    getEarliestEventMicros(pond, sidsWithOffsetsSetTo1, tags).then((earliestEventMicros) =>
-      setStartTimeMillis(earliestEventMicros / 1000),
-    )
-    getLatestEventMicros(pond, sidsWithOffsetsSetTo1, tags).then((lastestEventMicros) =>
-      setEndTimeMillis(lastestEventMicros / 1000),
-    )
-  }, [tags, upperBound])
+  }, [tags])
 
   const onEventFunction = React.useCallback(
     (state, event, meta): Reduce<unknown, unknown> => {
@@ -208,54 +218,6 @@ function addSourceToOffsetMap(
     ...selectedEventOffsetMap,
     [sid]: +target.value,
   })
-}
-
-function sidsWithOffset1(upperBound: { readonly [x: string]: number }) {
-  return Object.entries(upperBound).reduce((previous, [sid]) => ({ ...previous, [sid]: 1 }), {})
-}
-
-function getEarliestEventMicros(
-  pond: Pond,
-  offsets: {
-    readonly [x: string]: number
-  },
-  tags: string,
-): Promise<number> {
-  return pond
-    .events()
-    .queryKnownRange({
-      upperBound: offsets,
-      order: 'Asc',
-      query: tagsFromString(tags),
-    })
-    .then((events) =>
-      events.reduce((previous, current) =>
-        current.meta.timestampMicros < previous.meta.timestampMicros ? current : previous,
-      ),
-    )
-    .then((earliestEvent) => earliestEvent.meta.timestampMicros)
-}
-
-function getLatestEventMicros(
-  pond: Pond,
-  offsets: {
-    readonly [x: string]: number
-  },
-  tags: string,
-): Promise<number> {
-  return pond
-    .events()
-    .queryKnownRange({
-      upperBound: offsets,
-      order: 'Desc',
-      query: tagsFromString(tags),
-    })
-    .then((events) =>
-      events.reduce((previous, current) =>
-        current.meta.timestampMicros > previous.meta.timestampMicros ? current : previous,
-      ),
-    )
-    .then((latestEvent) => latestEvent.meta.timestampMicros)
 }
 
 function tagsFromString(tags: string) {
