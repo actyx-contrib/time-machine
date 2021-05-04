@@ -1,10 +1,14 @@
 import React, { useState } from 'react'
 import { OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
+import { Client, Ordering, Subscription } from '@actyx/os-sdk'
+require('regenerator-runtime/runtime')
 
 const defaultOnEvent = `(state, event, metadata) => {
   return state
 }`
+
+const actyx = Client()
 
 export function TimeMachineComponent(): JSX.Element {
   const [tags, setTags] = React.useState('oven-fish:oven_1')
@@ -87,11 +91,10 @@ export function TimeMachineComponent(): JSX.Element {
     )
   }, [selectedEventOffsetMap])
 
-  /*React.useEffect(() => {
+  React.useEffect(() => {
     if (!upperBound) return
-    delimitSelectedOffsetsByTimestamp(currentTimeMillis, upperBound, pond)
+    getLastOffsetBeforeTimestampBySid(upperBound!, 1000, 'test')
   }, [currentTimeMillis])
-  */
 
   if (!upperBound || !startTimeMillis || !endTimeMillis) {
     return <div>loading...</div>
@@ -186,58 +189,32 @@ export function TimeMachineComponent(): JSX.Element {
       </div>
     </div>
   )
+}
 
-  /*function delimitSelectedOffsetsByTimestamp(
-    limitMillis: number,
-    offsets: OffsetMap,
-    pond: Pond,
-  ): void {
-    Object.entries(offsets).forEach(([sid, events]) => {
-      let limitFound = false
-      pond
-        .events()
-        .queryKnownRangeChunked(
-          { upperBound: addValueToOffsetMap({}, sid, events) },
-          1,
-          (chunk) => {
-            if (chunk.events[0].meta.timestampMicros >= limitMillis * 1000 && !limitFound) {
-              if (sid === 'Q2bgpSgX3yq') {
-                console.log(chunk)
-              }
-              const offsetOfCurrentEvent = chunk.lowerBound[sid] || -1
+async function getLastOffsetBeforeTimestampBySid(
+  upperBound: OffsetMap,
+  limitMillis: number,
+  sid: string,
+): Promise<number> {
+  const subscription = await actyx.eventService.queryStream({
+    // Define an upper bound for the query
+    upperBound: upperBound,
 
-              setSelectedEventOffsetMap(
-                addValueToOffsetMap(selectedEventOffsetMap, sid, offsetOfCurrentEvent),
-              )
-              limitFound = true
-            } else {
-              if (sid === 'Q2bgpSgX3yq') {
-                console.log(
-                  'SID: ' +
-                    sid +
-                    ' Limit:' +
-                    limitMillis * 1000 +
-                    ' Timestamp ' +
-                    chunk.events[0].meta.timestampMicros +
-                    'Offset: ' +
-                    chunk.upperBound[sid] +
-                    ' Found: ' +
-                    limitFound +
-                    ' Condition ' +
-                    (chunk.events[0].meta.timestampMicros >= limitMillis * 1000),
-                )
-              }
-            }
-          },
-        )
-      if (!limitFound) {
-        setSelectedEventOffsetMap(
-          addValueToOffsetMap(selectedEventOffsetMap, sid, upperBound![sid]),
-        )
-      }
-    })
+    // Order the events using their lamport timestamp
+    ordering: Ordering.Lamport,
+
+    // Define a subscription to all events in all event streams
+    subscriptions: Subscription.everything(),
+  })
+
+  console.log('executed')
+  for await (const event of subscription) {
+    console.log(event.timestamp + limitMillis * 1000)
+    if (event.timestamp > limitMillis * 1000) {
+      return event.offset - 1
+    }
   }
-  */
+  return upperBound[sid]
 }
 
 function reduceTwinStateFromEvents(
