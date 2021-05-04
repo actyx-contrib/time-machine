@@ -87,6 +87,12 @@ export function TimeMachineComponent(): JSX.Element {
     )
   }, [selectedEventOffsetMap])
 
+  /*React.useEffect(() => {
+    if (!upperBound) return
+    delimitSelectedOffsetsByTimestamp(currentTimeMillis, upperBound, pond)
+  }, [currentTimeMillis])
+  */
+
   if (!upperBound || !startTimeMillis || !endTimeMillis) {
     return <div>loading...</div>
   }
@@ -149,7 +155,7 @@ export function TimeMachineComponent(): JSX.Element {
                   id="myRange"
                   onChange={({ target }) => {
                     setSelectedEventOffsetMap(
-                      setOffsetMapValue(selectedEventOffsetMap, sid, +target.value),
+                      addValueToOffsetMap(selectedEventOffsetMap, sid, +target.value),
                     )
                   }}
                 />
@@ -180,6 +186,58 @@ export function TimeMachineComponent(): JSX.Element {
       </div>
     </div>
   )
+
+  /*function delimitSelectedOffsetsByTimestamp(
+    limitMillis: number,
+    offsets: OffsetMap,
+    pond: Pond,
+  ): void {
+    Object.entries(offsets).forEach(([sid, events]) => {
+      let limitFound = false
+      pond
+        .events()
+        .queryKnownRangeChunked(
+          { upperBound: addValueToOffsetMap({}, sid, events) },
+          1,
+          (chunk) => {
+            if (chunk.events[0].meta.timestampMicros >= limitMillis * 1000 && !limitFound) {
+              if (sid === 'Q2bgpSgX3yq') {
+                console.log(chunk)
+              }
+              const offsetOfCurrentEvent = chunk.lowerBound[sid] || -1
+
+              setSelectedEventOffsetMap(
+                addValueToOffsetMap(selectedEventOffsetMap, sid, offsetOfCurrentEvent),
+              )
+              limitFound = true
+            } else {
+              if (sid === 'Q2bgpSgX3yq') {
+                console.log(
+                  'SID: ' +
+                    sid +
+                    ' Limit:' +
+                    limitMillis * 1000 +
+                    ' Timestamp ' +
+                    chunk.events[0].meta.timestampMicros +
+                    'Offset: ' +
+                    chunk.upperBound[sid] +
+                    ' Found: ' +
+                    limitFound +
+                    ' Condition ' +
+                    (chunk.events[0].meta.timestampMicros >= limitMillis * 1000),
+                )
+              }
+            }
+          },
+        )
+      if (!limitFound) {
+        setSelectedEventOffsetMap(
+          addValueToOffsetMap(selectedEventOffsetMap, sid, upperBound![sid]),
+        )
+      }
+    })
+  }
+  */
 }
 
 function reduceTwinStateFromEvents(
@@ -214,18 +272,7 @@ function tagsFromString(tags: string) {
     return Tags('unknown')
   }
 }
-/*
-function delimitOffsetsByTimestamp(limitMillis: number, offsets: OffsetMap, pond: Pond ) : Promise<OffsetMap> {
-  Object.entries(offsets).map(([sid, events]) => {
-    pond.events().queryAllKnownChunked({query: tagsFromString(tags)}, 1, (chunk) => {
-      if(chunk.events[0].meta.timestampMicros > limitMillis){
 
-      }
-    })
-  })
-  
-}
-*/
-function setOffsetMapValue(offsets: OffsetMap, sid: string, events: number): OffsetMap {
+function addValueToOffsetMap(offsets: OffsetMap, sid: string, events: number): OffsetMap {
   return { ...offsets, [sid]: events }
 }
