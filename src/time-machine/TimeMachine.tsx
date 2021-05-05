@@ -1,14 +1,13 @@
 import React, { useState } from 'react'
-import { OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
+import { ActyxEvent, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
-import { Client, Ordering, Subscription } from '@actyx/os-sdk'
 import { Slider, Typography, TextField, Grid } from '@material-ui/core'
 
 const defaultOnEvent = `(state, event, metadata) => {
   return state
 }`
 
-const actyx = Client()
+type RelativeTiming = 'beforeBounds' | 'withinBounds' | 'afterBounds'
 
 export function TimeMachineComponent(): JSX.Element {
   const [tags, setTags] = React.useState('oven-fish:oven_1')
@@ -19,6 +18,7 @@ export function TimeMachineComponent(): JSX.Element {
   const [startTimeMillis, setStartTimeMillis] = useState<number>()
   const [endTimeMillis, setEndTimeMillis] = useState<number>()
   const [currentTimeMillis, setCurrentTimeMillis] = useState<number>(0)
+  const [currentTimeMillisSelection, setCurrentTimeMillisSelection] = useState<number>(0)
   const [selectedEventOffsetMap, setSelectedEventOffsetMap] = useState<OffsetMap>({})
 
   const [twinState, setTwinState] = useState({})
@@ -41,7 +41,6 @@ export function TimeMachineComponent(): JSX.Element {
         query: tagsFromString(tags),
       },
       (event, metadata) => {
-        console.log('First Entry: ' + metadata.lamport)
         setStartTimeMillis(metadata.timestampMicros / 1000)
       },
     )
@@ -50,7 +49,6 @@ export function TimeMachineComponent(): JSX.Element {
         query: tagsFromString(tags),
       },
       (event, metadata) => {
-        console.log('Last Entry: ' + metadata.lamport)
         setEndTimeMillis(metadata.timestampMicros / 1000)
       },
     )
@@ -94,7 +92,8 @@ export function TimeMachineComponent(): JSX.Element {
 
   React.useEffect(() => {
     if (!upperBound) return
-    getLastOffsetBeforeTimestamp(upperBound!, 1000, 'test')
+
+    updateSelectedEventOffsetMapForAllSids()
   }, [currentTimeMillis])
 
   if (!upperBound || !startTimeMillis || !endTimeMillis) {
@@ -155,7 +154,7 @@ export function TimeMachineComponent(): JSX.Element {
         {Object.entries(upperBound).map(([sid, events]) => {
           const value = selectedEventOffsetMap[sid] || 0
           return (
-            <Grid item container spacing={1} xs={12}>
+            <Grid key={sid} item container spacing={1} xs={12}>
               <Grid item xs={2}>
                 <span style={{ width: 170 }}>
                   {sid} ({value}/{events})
@@ -187,10 +186,13 @@ export function TimeMachineComponent(): JSX.Element {
         <Grid item xs={10}>
           <Slider
             style={{ width: 350 }}
-            value={currentTimeMillis}
+            value={currentTimeMillisSelection}
             min={startTimeMillis ? startTimeMillis : 0}
             max={endTimeMillis ? endTimeMillis : Date.now()}
             onChange={(event, value) => {
+              setCurrentTimeMillisSelection(+value)
+            }}
+            onChangeCommitted={(event, value) => {
               setCurrentTimeMillis(+value)
             }}
             aria-labelledby="continuous-slider"
@@ -199,33 +201,96 @@ export function TimeMachineComponent(): JSX.Element {
       </Grid>
     </div>
   )
+
+  async function updateSelectedEventOffsetMapForAllSids() {
+    if (!upperBound) return
+    let newOffsets = {}
+    for (const [sid, event] of Object.entries(upperBound)) {
+      const selectedOffset = await getLastOffsetBeforeTimestamp(
+        upperBound,
+        sid,
+        currentTimeMillis * 1000,
+        pond,
+      )
+      newOffsets = addValueToOffsetMap(newOffsets, sid, selectedOffset)
+    }
+    setSelectedEventOffsetMap(newOffsets)
+  }
+}
+
+async function compareTimestampWithOffsetBounds(
+  offsets: OffsetMap,
+  sid: string,
+  timestampMicros: number,
+  pond: Pond,
+): Promise<RelativeTiming> {
+  const earliestEvent = await getEarliestActyxEventBySid(offsets, sid, pond)
+  const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
+  if (timestampMicros < earliestEvent.meta.timestampMicros) {
+    return 'beforeBounds'
+  }
+  if (timestampMicros > latestEvent.meta.timestampMicros) {
+    return 'afterBounds'
+  }
+  return 'withinBounds'
 }
 
 async function getLastOffsetBeforeTimestamp(
-  upperBound: OffsetMap,
-  limitMillis: number,
+  offsets: OffsetMap,
   sid: string,
+  timestampMicros: number,
+  pond: Pond,
 ): Promise<number> {
-  const subscription = await actyx.eventService.queryStream({
-    // Define an upper bound for the query
-    upperBound: upperBound,
-
-    // Order the events using their lamport timestamp
-    ordering: Ordering.Lamport,
-
-    // Define a subscription to all events in all event streams
-    subscriptions: Subscription.everything(),
-  })
-
-  console.log(subscription)
-  console.log('executed')
-  for await (const event of subscription) {
-    console.log(event.timestamp + limitMillis * 1000)
-    if (event.timestamp > limitMillis * 1000) {
-      return event.offset - 1
+  const relativeTiming = await compareTimestampWithOffsetBounds(offsets, sid, timestampMicros, pond)
+  if (relativeTiming === 'beforeBounds') {
+    return 0
+  }
+  const maxOffset = offsets[sid]
+  if (relativeTiming === 'afterBounds') {
+    return maxOffset
+  }
+  //inperformant iterative search, will be replaced with binary search
+  for (let currentOffset = 0; currentOffset < maxOffset; currentOffset++) {
+    const currentEvent = await getActyxEventByOffset(sid, currentOffset, pond)
+    if (currentEvent.meta.timestampMicros > timestampMicros) {
+      return currentOffset
     }
   }
-  return upperBound[sid]
+  return maxOffset
+}
+
+async function getEarliestActyxEventBySid(
+  offsets: OffsetMap,
+  sid: string,
+  pond: Pond,
+): Promise<ActyxEvent<unknown>> {
+  return await getActyxEventByOffset(sid, 0, pond)
+}
+
+async function getLatestActyxEventBySid(
+  offsets: OffsetMap,
+  sid: string,
+  pond: Pond,
+): Promise<ActyxEvent<unknown>> {
+  const offset = offsets[sid]
+  return await getActyxEventByOffset(sid, offset, pond)
+}
+
+async function getActyxEventByOffset(
+  sid: string,
+  eventOffset: number,
+  pond: Pond,
+): Promise<ActyxEvent<unknown>> {
+  const lowerBound = eventOffset > 0 ? addValueToOffsetMap({}, sid, eventOffset - 1) : null
+  const upperBound = addValueToOffsetMap({}, sid, eventOffset)
+  const params = lowerBound
+    ? { upperBound: upperBound, lowerBound: lowerBound }
+    : { upperBound: upperBound }
+  const results = await pond.events().queryKnownRange(params)
+  if (results.length === 0) throw new Error('Event could not be retrieved')
+  else {
+    return results[0]
+  }
 }
 
 function reduceTwinStateFromEvents(
