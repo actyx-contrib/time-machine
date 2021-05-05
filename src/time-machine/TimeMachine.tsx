@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import { Client, Ordering, Subscription } from '@actyx/os-sdk'
-require('regenerator-runtime/runtime')
+import { Slider, Typography, TextField, Grid } from '@material-ui/core'
 
 const defaultOnEvent = `(state, event, metadata) => {
   return state
@@ -25,6 +25,7 @@ export function TimeMachineComponent(): JSX.Element {
   const pond = usePond()
 
   React.useEffect(() => {
+    pond.events().currentOffsets().then(setUpperBound)
     const refresh = setInterval(() => {
       pond.events().currentOffsets().then(setUpperBound)
     }, 10000)
@@ -93,7 +94,7 @@ export function TimeMachineComponent(): JSX.Element {
 
   React.useEffect(() => {
     if (!upperBound) return
-    getLastOffsetBeforeTimestampBySid(upperBound!, 1000, 'test')
+    getLastOffsetBeforeTimestamp(upperBound!, 1000, 'test')
   }, [currentTimeMillis])
 
   if (!upperBound || !startTimeMillis || !endTimeMillis) {
@@ -107,91 +108,100 @@ export function TimeMachineComponent(): JSX.Element {
   return (
     <div>
       <div style={{ flex: 1 }}>
-        <h1>Actyx Time Machine</h1>
+        <Typography variant="h1" component="h2" gutterBottom>
+          Actyx Time Machine
+        </Typography>
       </div>
-      <div style={{ flex: 1 }}>
-        <div>
-          <div>
-            <span>Where:</span>
-            <input
-              style={{ width: 350 }}
-              value={tags}
-              type="text"
-              onChange={({ target }) => setTags(target.value)}
-            />
-          </div>
-          <div>
-            <span>Initial State:</span>
-            <textarea
-              style={{ width: 350 }}
-              value={initState}
-              onChange={({ target }) => setInitState(target.value)}
-            />
-          </div>
-          <div>
-            <span>onEvent function:</span>
-            <textarea
-              style={{ width: 350 }}
-              value={onEventFunctionCode}
-              onChange={({ target }) => setOnEventFunction(target.value)}
-            />
-          </div>
-        </div>
-        <div>fishState: {JSON.stringify(twinState)}</div>
-      </div>
-      <div>
+      <Grid container spacing={1}>
+        <Grid item xs={2}>
+          <span>Where:</span>
+        </Grid>
+        <Grid item xs={10}>
+          <TextField
+            style={{ width: 350 }}
+            value={tags}
+            type="text"
+            onChange={({ target }) => setTags(target.value)}
+          />
+        </Grid>
+        <Grid item xs={2}>
+          <span>Initial State:</span>
+        </Grid>
+        <Grid item xs={10}>
+          <TextField
+            style={{ width: 350 }}
+            value={initState}
+            multiline
+            onChange={({ target }) => setInitState(target.value)}
+          />
+        </Grid>
+        <Grid item xs={2}>
+          <span>onEvent function:</span>
+        </Grid>
+        <Grid item xs={10}>
+          <TextField
+            style={{ width: 350 }}
+            value={onEventFunctionCode}
+            multiline
+            onChange={({ target }) => setOnEventFunction(target.value)}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <br></br>
+          <div>fishState: {JSON.stringify(twinState)}</div>
+          <br></br>
+        </Grid>
+
         {Object.entries(upperBound).map(([sid, events]) => {
           const value = selectedEventOffsetMap[sid] || 0
           return (
-            <div key={sid} style={{ display: 'flex' }}>
-              <span style={{ width: 170 }}>
-                {sid} ({value}/{events})
-              </span>
-              <div className="slidecontainer">
-                <input
+            <Grid item container spacing={1} xs={12}>
+              <Grid item xs={2}>
+                <span style={{ width: 170 }}>
+                  {sid} ({value}/{events})
+                </span>
+              </Grid>
+              <Grid item xs={2}>
+                <Slider
                   style={{ width: 350 }}
-                  type="range"
+                  value={value}
                   min={0}
                   max={events}
-                  value={value}
-                  className="slider"
-                  id="myRange"
-                  onChange={({ target }) => {
+                  onChange={(event, value) => {
                     setSelectedEventOffsetMap(
-                      addValueToOffsetMap(selectedEventOffsetMap, sid, +target.value),
+                      addValueToOffsetMap(selectedEventOffsetMap, sid, +value),
                     )
                   }}
+                  aria-labelledby="continuous-slider"
                 />
-              </div>
-            </div>
+              </Grid>
+            </Grid>
           )
         })}
-      </div>
 
-      <div>
-        <div style={{ display: 'flex' }}>
+        <Grid item xs={2}>
           <span style={{ width: 170 }}>
             Time Machine {new Date(currentTimeMillis).toLocaleString()}
           </span>
-          <div className="slidecontainer">
-            <input
-              style={{ width: 350 }}
-              type="range"
-              min={startTimeMillis ? startTimeMillis : 0}
-              max={endTimeMillis ? endTimeMillis : Date.now()}
-              value={currentTimeMillis}
-              className="slider"
-              id="myRange"
-              onChange={({ target }) => setCurrentTimeMillis(+target.value)}
-            />
-          </div>
-        </div>
-      </div>
+        </Grid>
+        <Grid item xs={10}>
+          <Slider
+            style={{ width: 350 }}
+            value={currentTimeMillis}
+            min={startTimeMillis ? startTimeMillis : 0}
+            max={endTimeMillis ? endTimeMillis : Date.now()}
+            onChange={(event, value) => {
+              setCurrentTimeMillis(+value)
+            }}
+            aria-labelledby="continuous-slider"
+          />
+        </Grid>
+      </Grid>
     </div>
   )
 }
 
-async function getLastOffsetBeforeTimestampBySid(
+async function getLastOffsetBeforeTimestamp(
   upperBound: OffsetMap,
   limitMillis: number,
   sid: string,
@@ -207,6 +217,7 @@ async function getLastOffsetBeforeTimestampBySid(
     subscriptions: Subscription.everything(),
   })
 
+  console.log(subscription)
   console.log('executed')
   for await (const event of subscription) {
     console.log(event.timestamp + limitMillis * 1000)

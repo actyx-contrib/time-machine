@@ -13,8 +13,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@material-ui/core": "^4.11.4",
     "@types/react": "^17.0.4",
     "@types/react-dom": "^17.0.3",
+    "@types/regenerator-runtime": "^0.13.0",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
     "eslint": "^7.25.0",
@@ -25,6 +27,8 @@
     "parcel-bundler": "^1.12.3",
     "prettier": "^2.2.1",
     "regenerator-runtime": "^0.13.7",
+    "sass": "^1.32.12",
+    "scss": "^0.2.4",
     "typescript": "^4.2.4"
   },
   "axp": {
@@ -36,6 +40,7 @@
     "@actyx/industrial-ui": "^1.0.5",
     "@actyx/os-sdk": "^0.3.1",
     "@actyx/pond": "^2.5.0",
+    "@babel/core": "^7.14.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
   }

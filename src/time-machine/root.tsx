@@ -1,3 +1,4 @@
+import 'regenerator-runtime'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { Pond } from '@actyx-contrib/react-pond'
