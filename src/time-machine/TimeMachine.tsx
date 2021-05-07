@@ -4,7 +4,6 @@ import { usePond } from '@actyx-contrib/react-pond'
 import { Slider, Typography, TextField, Grid } from '@material-ui/core'
 import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
 import DateFnsUtils from '@date-io/date-fns'
-import { MaterialUiPickersDate } from '@material-ui/pickers/typings/date'
 
 const defaultOnEvent = `(state, event, metadata) => {
   return state
