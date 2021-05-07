@@ -9,10 +9,8 @@ const onError = () => {
 }
 
 ReactDOM.render(
-  <React.StrictMode>
-    <Pond loadComponent={<div>Connecting to ActyxOS</div>} onError={onError}>
-      <App />
-    </Pond>
-  </React.StrictMode>,
+  <Pond loadComponent={<div>Connecting to ActyxOS</div>} onError={onError}>
+    <App />
+  </Pond>,
   document.getElementById('root'),
 )

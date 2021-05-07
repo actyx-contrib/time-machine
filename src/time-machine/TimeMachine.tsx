@@ -2,6 +2,9 @@ import React, { useState } from 'react'
 import { ActyxEvent, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import { Slider, Typography, TextField, Grid } from '@material-ui/core'
+import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
+import DateFnsUtils from '@date-io/date-fns'
+import { MaterialUiPickersDate } from '@material-ui/pickers/typings/date'
 
 const defaultOnEvent = `(state, event, metadata) => {
   return state
@@ -113,7 +116,7 @@ export function TimeMachineComponent(): JSX.Element {
       </div>
       <Grid container spacing={1}>
         <Grid item xs={2}>
-          <span>Where:</span>
+          <Typography>Where:</Typography>
         </Grid>
         <Grid item xs={10}>
           <TextField
@@ -124,7 +127,7 @@ export function TimeMachineComponent(): JSX.Element {
           />
         </Grid>
         <Grid item xs={2}>
-          <span>Initial State:</span>
+          <Typography>Initial State:</Typography>
         </Grid>
         <Grid item xs={10}>
           <TextField
@@ -135,7 +138,7 @@ export function TimeMachineComponent(): JSX.Element {
           />
         </Grid>
         <Grid item xs={2}>
-          <span>onEvent function:</span>
+          <Typography>onEvent function:</Typography>
         </Grid>
         <Grid item xs={10}>
           <TextField
@@ -156,9 +159,9 @@ export function TimeMachineComponent(): JSX.Element {
           return (
             <Grid key={sid} item container spacing={1} xs={12}>
               <Grid item xs={2}>
-                <span style={{ width: 170 }}>
-                  {sid} ({value}/{events})
-                </span>
+                <Typography style={{ width: 170 }}>
+                  {sid} <br />({value}/{events})
+                </Typography>
               </Grid>
               <Grid item xs={2}>
                 <Slider
@@ -179,9 +182,9 @@ export function TimeMachineComponent(): JSX.Element {
         })}
 
         <Grid item xs={2}>
-          <span style={{ width: 170 }}>
+          <Typography style={{ width: 170 }}>
             Time Machine {new Date(currentTimeMillis).toLocaleString()}
-          </span>
+          </Typography>
         </Grid>
         <Grid item xs={10}>
           <Slider
@@ -198,9 +201,32 @@ export function TimeMachineComponent(): JSX.Element {
             aria-labelledby="continuous-slider"
           />
         </Grid>
+        <Grid item xs={12}>
+          <MuiPickersUtilsProvider utils={DateFnsUtils}>
+            <KeyboardDateTimePicker
+              variant="inline"
+              ampm={false}
+              label="Include events up to:"
+              value={currentTimeMillis}
+              onChange={(date) => {
+                if (date) {
+                  setCurrentTimeMillisByDate(date)
+                }
+              }}
+              onError={console.log}
+              format="yyyy/MM/dd HH:mm:ss"
+            />
+          </MuiPickersUtilsProvider>
+        </Grid>
       </Grid>
     </div>
   )
+
+  function setCurrentTimeMillisByDate(date: Date) {
+    console.log('triggered')
+    setCurrentTimeMillis(date.getTime())
+    setCurrentTimeMillisSelection(date.getTime())
+  }
 
   async function updateSelectedEventOffsetMapForAllSids() {
     if (!upperBound) return
