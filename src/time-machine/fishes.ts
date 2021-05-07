@@ -4,6 +4,6 @@ import { mkPickerFish } from './fish/picker-fish/picker-fish'
 
 const defaultFishName = 'default'
 
-export default function fishes(): Fish<any, any>[] {
-  return [mkOvenFish(defaultFishName), mkPickerFish(defaultFishName)]
+export default function fishes(): Fish<any, any> {
+  return mkOvenFish(defaultFishName)
 }

@@ -1,68 +1,65 @@
-import { Tag } from "@actyx/pond";
-import { exception } from "console";
-import { List } from "immutable";
-import { pickerFishName } from "./picker-fish";
+import { Tag } from '@actyx/pond'
+import { exception } from 'console'
+import { List } from 'immutable'
+import { pickerFishName } from './picker-fish'
 
 export type StatusType =
-  | "picking-up"
-  | "placing"
-  | "moving"
-  | "movement-queued"
-  | "transport-queued"
-  | "ready";
+  | 'picking-up'
+  | 'placing'
+  | 'moving'
+  | 'movement-queued'
+  | 'transport-queued'
+  | 'ready'
 
-export type Direction = "left" | "right";
+export type Direction = 'left' | 'right'
 
 export type UndefinedState = {
-  status: "undefined";
-};
+  status: 'undefined'
+}
 
 export type DefaultState = {
-  status: StatusType;
-  position: Direction;
-  target_position: Direction;
-  carrying: Boolean;
-};
+  status: StatusType
+  position: Direction
+  target_position: Direction
+  carrying: Boolean
+}
 
-export type PickerFishState = UndefinedState | DefaultState;
+export type PickerFishState = UndefinedState | DefaultState
 
 export type SetStateEvent = {
-  machineId: string;
-  eventType: "setState";
-  state: PickerFishState;
-};
+  machineId: string
+  eventType: 'setState'
+  state: PickerFishState
+}
 
 export type SetStatusEvent = {
-  machineId: string;
-  eventType: "setStatus";
-  status: StatusType;
-};
+  machineId: string
+  eventType: 'setStatus'
+  status: StatusType
+}
 
 export type PickerMoveRequestEvent = {
-  machineId: string;
-  eventType: "pickerMoveRequest";
-  direction: Direction;
-};
+  machineId: string
+  eventType: 'pickerMoveRequest'
+  direction: Direction
+}
 
 export type PickerTransportRequestEvent = {
-  machineId: string;
-  eventType: "pickerTransportRequest";
-  direction: Direction;
-};
+  machineId: string
+  eventType: 'pickerTransportRequest'
+  direction: Direction
+}
 
 export type PickerFishEvent =
   | PickerMoveRequestEvent
   | PickerTransportRequestEvent
   | SetStateEvent
-  | SetStatusEvent;
+  | SetStatusEvent
 
 export type PickerRegistryState = {
-  machineIds: List<string>;
-};
+  machineIds: List<string>
+}
 
 export const PickerFishTag = (pickerFishName: string) => {
-  if (!pickerFishName) {
-    throw new exception();
-  }
-  return Tag<PickerFishEvent>(pickerFishName);
-};
+  return Tag<PickerFishEvent>(pickerFishName)
+}
