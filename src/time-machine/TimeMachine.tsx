@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import { ActyxEvent, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
+import { ActyxEvent, Fish, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import { Slider, Typography, TextField, Grid } from '@material-ui/core'
 import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
 import DateFnsUtils from '@date-io/date-fns'
-import { MaterialUiPickersDate } from '@material-ui/pickers/typings/date'
+import fish from './fishes'
 
 const defaultOnEvent = `(state, event, metadata) => {
   return state
@@ -23,8 +23,9 @@ export function TimeMachineComponent(): JSX.Element {
   const [currentTimeMillis, setCurrentTimeMillis] = useState<number>(0)
   const [currentTimeMillisSelection, setCurrentTimeMillisSelection] = useState<number>(0)
   const [selectedEventOffsetMap, setSelectedEventOffsetMap] = useState<OffsetMap>({})
+  const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(fish())
 
-  const [twinState, setTwinState] = useState({})
+  const [fishStates, setFishStates] = useState([])
   const pond = usePond()
 
   React.useEffect(() => {
@@ -61,23 +62,6 @@ export function TimeMachineComponent(): JSX.Element {
     }
   }, [tags])
 
-  const onEventFunction = React.useCallback(
-    (state, event, meta): Reduce<unknown, unknown> => {
-      try {
-        return new Function(
-          '__inState__',
-          '__inEvent__',
-          '__inMetadata__',
-          `try{ return (${onEventFunctionCode})(__inState__, __inEvent__, __inMetadata__) } catch {return __inState__}`,
-        )(state, event, meta)
-      } catch (error) {
-        console.log(error)
-        return state
-      }
-    },
-    [onEventFunctionCode],
-  )
-
   //Reapply Events on Twin after Boundary Change
   React.useEffect(() => {
     if (!selectedEventOffsetMap) {
@@ -87,9 +71,9 @@ export function TimeMachineComponent(): JSX.Element {
       pond,
       selectedEventOffsetMap,
       tags,
-      onEventFunction,
-      initState,
-      setTwinState,
+      selectedFish.onEvent,
+      selectedFish.initialState,
+      setFishStates,
     )
   }, [selectedEventOffsetMap])
 
@@ -132,9 +116,9 @@ export function TimeMachineComponent(): JSX.Element {
         <Grid item xs={10}>
           <TextField
             style={{ width: 350 }}
-            value={initState}
+            value={JSON.stringify(selectedFish.initialState)}
             multiline
-            onChange={({ target }) => setInitState(target.value)}
+            disabled
           />
         </Grid>
         <Grid item xs={2}>
@@ -143,14 +127,14 @@ export function TimeMachineComponent(): JSX.Element {
         <Grid item xs={10}>
           <TextField
             style={{ width: 350 }}
-            value={onEventFunctionCode}
+            value={selectedFish.onEvent.toString()}
             multiline
-            onChange={({ target }) => setOnEventFunction(target.value)}
+            disabled
           />
         </Grid>
         <Grid item xs={12}>
           <br></br>
-          <div>fishState: {JSON.stringify(twinState)}</div>
+          <div>fishState: {JSON.stringify(fishStates)}</div>
           <br></br>
         </Grid>
 
@@ -324,7 +308,7 @@ function reduceTwinStateFromEvents(
   selectedEventOffsetMap: { readonly [x: string]: number },
   tags: string,
   onEventFn: (state: any, event: any, meta: any) => Reduce<unknown, unknown>,
-  initState: string,
+  initState: any,
   callback: (state: any) => void,
 ): any {
   pond.events().queryKnownRangeChunked(
@@ -338,7 +322,7 @@ function reduceTwinStateFromEvents(
       callback(
         events.reduce((state, { payload, meta }) => {
           return onEventFn(state, payload, meta)
-        }, JSON.parse(initState)),
+        }, initState),
       )
     },
   )
