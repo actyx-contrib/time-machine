@@ -4,7 +4,7 @@ import { usePond } from '@actyx-contrib/react-pond'
 import { Slider, Typography, TextField, Grid } from '@material-ui/core'
 import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
 import DateFnsUtils from '@date-io/date-fns'
-import fish from './fishes'
+import fishes from './fishes'
 
 const defaultOnEvent = `(state, event, metadata) => {
   return state
@@ -13,17 +13,15 @@ const defaultOnEvent = `(state, event, metadata) => {
 type RelativeTiming = 'beforeBounds' | 'withinBounds' | 'afterBounds'
 
 export function TimeMachineComponent(): JSX.Element {
-  const [tags, setTags] = React.useState('oven-fish:oven_1')
-  const [initState, setInitState] = React.useState('{"id": 1}')
-  const [onEventFunctionCode, setOnEventFunction] = React.useState(defaultOnEvent)
-
   const [upperBound, setUpperBound] = useState<OffsetMap>()
   const [startTimeMillis, setStartTimeMillis] = useState<number>()
   const [endTimeMillis, setEndTimeMillis] = useState<number>()
   const [currentTimeMillis, setCurrentTimeMillis] = useState<number>(0)
   const [currentTimeMillisSelection, setCurrentTimeMillisSelection] = useState<number>(0)
   const [selectedEventOffsetMap, setSelectedEventOffsetMap] = useState<OffsetMap>({})
-  const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(fish())
+  const [importedFishes, setImportedFishes] = useState<Fish<any, any>[]>(fishes())
+  const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
+  const [tags, setTags] = React.useState('oven-fish:oven_1')
 
   const [fishStates, setFishStates] = useState([])
   const pond = usePond()
