@@ -2,13 +2,10 @@ import React, { useState } from 'react'
 import { ActyxEvent, Fish, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import { Slider, Typography, TextField, Grid } from '@material-ui/core'
+import Alert from '@material-ui/lab/Alert'
 import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
 import DateFnsUtils from '@date-io/date-fns'
 import fishes from './fishes'
-
-const defaultOnEvent = `(state, event, metadata) => {
-  return state
-}`
 
 type RelativeTiming = 'beforeBounds' | 'withinBounds' | 'afterBounds'
 
@@ -21,7 +18,7 @@ export function TimeMachineComponent(): JSX.Element {
   const [selectedEventOffsetMap, setSelectedEventOffsetMap] = useState<OffsetMap>({})
   const [importedFishes, setImportedFishes] = useState<Fish<any, any>[]>(fishes())
   const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
-  const [tags, setTags] = React.useState('oven-fish:oven_1')
+  const [tags, setTags] = React.useState('oven-fish:oven_')
 
   const [fishStates, setFishStates] = useState([])
   const pond = usePond()
@@ -38,6 +35,8 @@ export function TimeMachineComponent(): JSX.Element {
 
   //Reload the time boundaries whenever an earlier/later event arrives or the tags change
   React.useEffect(() => {
+    setStartTimeMillis(undefined)
+    setEndTimeMillis(undefined)
     const cancelSubscriptionOnEarlist = pond.events().observeEarliest(
       {
         query: tagsFromString(tags),
@@ -81,12 +80,13 @@ export function TimeMachineComponent(): JSX.Element {
     updateSelectedEventOffsetMapForAllSids()
   }, [currentTimeMillis])
 
-  if (!upperBound || !startTimeMillis || !endTimeMillis) {
+  console.log(upperBound)
+  if (!upperBound) {
     return <div>loading...</div>
   }
 
   if (!currentTimeMillis) {
-    setCurrentTimeMillis(endTimeMillis)
+    setCurrentTimeMillis(Date.now())
   }
 
   return (
@@ -97,6 +97,11 @@ export function TimeMachineComponent(): JSX.Element {
         </Typography>
       </div>
       <Grid container spacing={1}>
+        {!startTimeMillis ? (
+          <Grid item xs={12}>
+            <Alert severity="warning">No events match the given Tags!</Alert>
+          </Grid>
+        ) : null}
         <Grid item xs={2}>
           <Typography>Where:</Typography>
         </Grid>
@@ -135,7 +140,6 @@ export function TimeMachineComponent(): JSX.Element {
           <div>fishState: {JSON.stringify(fishStates)}</div>
           <br></br>
         </Grid>
-
         {Object.entries(upperBound).map(([sid, events]) => {
           const value = selectedEventOffsetMap[sid] || 0
           return (
@@ -162,7 +166,6 @@ export function TimeMachineComponent(): JSX.Element {
             </Grid>
           )
         })}
-
         <Grid item xs={2}>
           <Typography style={{ width: 170 }}>
             Time Machine {new Date(currentTimeMillis).toLocaleString()}
@@ -174,6 +177,7 @@ export function TimeMachineComponent(): JSX.Element {
             value={currentTimeMillisSelection}
             min={startTimeMillis ? startTimeMillis : 0}
             max={endTimeMillis ? endTimeMillis : Date.now()}
+            disabled={!startTimeMillis || !endTimeMillis}
             onChange={(event, value) => {
               setCurrentTimeMillisSelection(+value)
             }}
@@ -190,6 +194,7 @@ export function TimeMachineComponent(): JSX.Element {
               ampm={false}
               label="Include events up to:"
               value={currentTimeMillis}
+              disabled={!startTimeMillis || !endTimeMillis}
               onChange={(date) => {
                 if (date) {
                   setCurrentTimeMillisByDate(date)
@@ -205,7 +210,6 @@ export function TimeMachineComponent(): JSX.Element {
   )
 
   function setCurrentTimeMillisByDate(date: Date) {
-    console.log('triggered')
     setCurrentTimeMillis(date.getTime())
     setCurrentTimeMillisSelection(date.getTime())
   }
