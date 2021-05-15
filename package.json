@@ -29,9 +29,12 @@
     "axpVersion": "1.3.0",
     "pondVersion": 2
   },
+  "bundledDependencies": [
+    "@actyx-contrib/react-pond",
+    "@actyx/pond"
+  ],
   "dependencies": {
     "@actyx-contrib/react-pond": "^2.0.2",
-    "@actyx/pond": "^2.5.2",
     "@babel/core": "^7.14.2",
     "@date-io/date-fns": "1.3.11",
     "@material-ui/core": "^4.11.4",
