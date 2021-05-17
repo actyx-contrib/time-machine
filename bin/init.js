@@ -7,14 +7,14 @@ function isEmpty(path) {
   return readdirSync(path).length === 0
 }
 
-const copyTimeMachineSources = (timeMachinePath) => {
+const copyTimeMachineSources = (userTimeMachinePath) => {
   const pathToIndexJS = require.resolve('actyx-time-machine')
-  const pathToModule = join(pathToIndexJS, '..')
+  const pathToTimeMachineSources = join(pathToIndexJS, '..', 'src', 'time-machine')
 
-  if (!existsSync(timeMachinePath) || isEmpty(timeMachinePath)) {
-    console.log(`⚙️ Copying time-machine sources to ${timeMachinePath}`)
+  if (!existsSync(userTimeMachinePath) || isEmpty(userTimeMachinePath)) {
+    console.log(`⚙️ Copying time-machine sources to ${userTimeMachinePath}`)
     try {
-      copySync(pathToModule, timeMachinePath)
+      copySync(pathToTimeMachineSources, userTimeMachinePath)
     } catch (error) {
       console.error(`❌ An error occured while copying sources: ${error}`)
       return
