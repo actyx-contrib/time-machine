@@ -6,4 +6,5 @@ parcel-debug-*
 src/*/release
 src/**/*.js
 *.js.map
+*.tgz
 
