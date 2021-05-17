@@ -4,6 +4,6 @@ dist
 .cache
 parcel-debug-*
 src/*/release
-*.js
+src/**/*.js
 *.js.map
 
