@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ActyxEvent, Fish, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
-import { Slider, Typography, TextField, Grid } from '@material-ui/core'
+import { Slider, Typography, TextField, Grid, CardContent, Card } from '@material-ui/core'
 import Alert from '@material-ui/lab/Alert'
 import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
 import DateFnsUtils from '@date-io/date-fns'
@@ -21,7 +21,7 @@ export function TimeMachineComponent(): JSX.Element {
 
   const [importedFishes, setImportedFishes] = useState<Fish<any, any>[]>(fishes())
   const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
-  const [selectedTags, setSelectedTags] = React.useState('oven-fish:oven_')
+  const [selectedTags, setSelectedTags] = React.useState('your-fish:your-identifier')
 
   const [fishStates, setFishStates] = useState([])
   const pond = usePond()
@@ -97,131 +97,142 @@ export function TimeMachineComponent(): JSX.Element {
         <Typography variant="h1" component="h1" gutterBottom>
           Actyx Time Machine
         </Typography>
-      </div>
-      <Grid container spacing={1}>
         {!earliestEventMillis ? (
           <Grid item xs={12}>
             <Alert severity="warning">
-              No events match the given Tags. Please change your tags!
+              No events match the given tags. Please change your tags!
             </Alert>
           </Grid>
         ) : null}
-        <Grid item xs={12}>
-          <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-            Fish properties
-          </Typography>
-        </Grid>
-        <Grid item xs={2}>
-          <Typography>Tags:</Typography>
-        </Grid>
-        <Grid item xs={10}>
-          <TextField
-            style={{ width: 350 }}
-            value={selectedTags}
-            type="text"
-            onChange={({ target }) => setSelectedTags(target.value)}
-          />
-        </Grid>
-        <Grid item xs={2}>
-          <Typography>Initial State:</Typography>
-        </Grid>
-        <Grid item xs={10}>
-          <TextField
-            style={{ width: 350 }}
-            value={JSON.stringify(selectedFish.initialState)}
-            multiline
-            disabled
-          />
-        </Grid>
-        <Grid item xs={2}>
-          <Typography>onEvent function:</Typography>
-        </Grid>
-        <Grid item xs={10}>
-          <TextField
-            style={{ width: 350 }}
-            value={selectedFish.onEvent.toString()}
-            multiline
-            disabled
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <br></br>
-          <div>fishState: {JSON.stringify(fishStates)}</div>
-          <br></br>
-        </Grid>
-        <Grid item xs={12}>
-          <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-            Select time limit:
-          </Typography>
-        </Grid>
-        <Grid item xs={2}>
-          <Typography style={{ width: 170 }}>
-            Time Machine {new Date(selectedTimeLimitMillis).toLocaleString()}
-          </Typography>
-        </Grid>
-        <Grid item xs={10}>
-          <Slider
-            style={{ width: 350 }}
-            value={timeSliderValue}
-            min={earliestEventMillis ? earliestEventMillis : 0}
-            max={latestEventMillis ? latestEventMillis : Date.now()}
-            disabled={!earliestEventMillis || !latestEventMillis}
-            onChange={(event, value) => {
-              setTimeSliderValue(+value)
-            }}
-            onChangeCommitted={(event, value) => {
-              setSelectedTimeLimitMillis(+value)
-            }}
-            aria-labelledby="continuous-slider"
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <MuiPickersUtilsProvider utils={DateFnsUtils}>
-            <KeyboardDateTimePicker
-              variant="inline"
-              ampm={false}
-              label="Include events up to:"
-              value={selectedTimeLimitMillis}
-              disabled={!earliestEventMillis || !latestEventMillis}
-              onChange={(date) => {
-                if (date) {
-                  setCurrentTimeMillisByDate(date)
-                }
-              }}
-              onError={console.log}
-              format="yyyy/MM/dd HH:mm:ss"
+      </div>
+      <br />
+      <Grid container spacing={2}>
+        <Grid container spacing={2} item xs={6}>
+          <Grid item xs={12}>
+            <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+              Fish properties
+            </Typography>
+          </Grid>
+          <Grid item xs={2}>
+            <Typography>Tags:</Typography>
+          </Grid>
+          <Grid item xs={10}>
+            <TextField
+              style={{ width: 350 }}
+              value={selectedTags}
+              type="text"
+              onChange={({ target }) => setSelectedTags(target.value)}
             />
-          </MuiPickersUtilsProvider>
+          </Grid>
+          <Grid item xs={2}>
+            <Typography>Initial State:</Typography>
+          </Grid>
+          <Grid item xs={10}>
+            <TextField
+              style={{ width: 350 }}
+              value={JSON.stringify(selectedFish.initialState)}
+              multiline
+              disabled
+            />
+          </Grid>
+          <Grid item xs={2}>
+            <Typography>onEvent function:</Typography>
+          </Grid>
+          <Grid item xs={10}>
+            <TextField
+              style={{ width: 350 }}
+              value={selectedFish.onEvent.toString()}
+              multiline
+              disabled
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+              Select time limit:
+            </Typography>
+          </Grid>
+          <Grid item xs={2}>
+            <Typography style={{ width: 170 }}>
+              Date Slider (will be removed) {new Date(selectedTimeLimitMillis).toLocaleString()}
+            </Typography>
+          </Grid>
+          <Grid item xs={10}>
+            <Slider
+              style={{ width: 350 }}
+              value={timeSliderValue}
+              min={earliestEventMillis ? earliestEventMillis : 0}
+              max={latestEventMillis ? latestEventMillis : Date.now()}
+              disabled={!earliestEventMillis || !latestEventMillis}
+              onChange={(event, value) => {
+                setTimeSliderValue(+value)
+              }}
+              onChangeCommitted={(event, value) => {
+                setSelectedTimeLimitMillis(+value)
+              }}
+              aria-labelledby="continuous-slider"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <MuiPickersUtilsProvider utils={DateFnsUtils}>
+              <KeyboardDateTimePicker
+                variant="inline"
+                ampm={false}
+                label="Include events up to:"
+                value={selectedTimeLimitMillis}
+                disabled={!earliestEventMillis || !latestEventMillis}
+                onChange={(date) => {
+                  if (date) {
+                    setCurrentTimeMillisByDate(date)
+                  }
+                }}
+                onError={console.log}
+                format="yyyy/MM/dd HH:mm:ss"
+              />
+            </MuiPickersUtilsProvider>
+          </Grid>
+          <Grid item xs={12}>
+            <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+              Select events from your ActyxOS nodes:
+            </Typography>
+          </Grid>
+          {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
+            return (
+              <Grid key={sid} item container spacing={1} xs={12}>
+                <Grid item xs={2}>
+                  <Typography style={{ width: 170 }}>
+                    {sid} <br />({selectedEvents[sid] || 0}/{events})
+                  </Typography>
+                </Grid>
+                <Grid item xs={2}>
+                  <Slider
+                    style={{ width: 350 }}
+                    value={selectedEvents[sid] || 0}
+                    min={0}
+                    max={events}
+                    disabled={!earliestEventMillis || !latestEventMillis}
+                    onChange={(event, value) => {
+                      setSelectedEvents(addValueToOffsetMap(selectedEvents, sid, +value))
+                    }}
+                    aria-labelledby="continuous-slider"
+                  />
+                </Grid>
+              </Grid>
+            )
+          })}
         </Grid>
-        <Grid item xs={12}>
+        <Grid item xs={6}>
           <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-            Select events from your ActyxOS nodes:
+            Resulting Fish-State:
           </Typography>
+          <Card>
+            <CardContent>
+              <Typography gutterBottom>
+                <br />
+                {JSON.stringify(fishStates)}
+              </Typography>
+            </CardContent>
+          </Card>
         </Grid>
-        {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
-          return (
-            <Grid key={sid} item container spacing={1} xs={12}>
-              <Grid item xs={2}>
-                <Typography style={{ width: 170 }}>
-                  {sid} <br />({selectedEvents[sid] || 0}/{events})
-                </Typography>
-              </Grid>
-              <Grid item xs={2}>
-                <Slider
-                  style={{ width: 350 }}
-                  value={selectedEvents[sid] || 0}
-                  min={0}
-                  max={events}
-                  disabled={!earliestEventMillis || !latestEventMillis}
-                  onChange={(event, value) => {
-                    setSelectedEvents(addValueToOffsetMap(selectedEvents, sid, +value))
-                  }}
-                  aria-labelledby="continuous-slider"
-                />
-              </Grid>
-            </Grid>
-          )
-        })}
       </Grid>
     </div>
   )
