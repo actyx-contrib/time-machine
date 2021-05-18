@@ -94,18 +94,25 @@ export function TimeMachineComponent(): JSX.Element {
   return (
     <div>
       <div style={{ flex: 1 }}>
-        <Typography variant="h1" component="h2" gutterBottom>
+        <Typography variant="h1" component="h1" gutterBottom>
           Actyx Time Machine
         </Typography>
       </div>
       <Grid container spacing={1}>
         {!earliestEventMillis ? (
           <Grid item xs={12}>
-            <Alert severity="warning">No events match the given Tags!</Alert>
+            <Alert severity="warning">
+              No events match the given Tags. Please change your tags!
+            </Alert>
           </Grid>
         ) : null}
+        <Grid item xs={12}>
+          <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+            Fish properties
+          </Typography>
+        </Grid>
         <Grid item xs={2}>
-          <Typography>Where:</Typography>
+          <Typography>Tags:</Typography>
         </Grid>
         <Grid item xs={10}>
           <TextField
@@ -142,30 +149,11 @@ export function TimeMachineComponent(): JSX.Element {
           <div>fishState: {JSON.stringify(fishStates)}</div>
           <br></br>
         </Grid>
-        {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
-          return (
-            <Grid key={sid} item container spacing={1} xs={12}>
-              <Grid item xs={2}>
-                <Typography style={{ width: 170 }}>
-                  {sid} <br />({selectedEvents[sid] || 0}/{events})
-                </Typography>
-              </Grid>
-              <Grid item xs={2}>
-                <Slider
-                  style={{ width: 350 }}
-                  value={selectedEvents[sid] || 0}
-                  min={0}
-                  max={events}
-                  disabled={!earliestEventMillis || !latestEventMillis}
-                  onChange={(event, value) => {
-                    setSelectedEvents(addValueToOffsetMap(selectedEvents, sid, +value))
-                  }}
-                  aria-labelledby="continuous-slider"
-                />
-              </Grid>
-            </Grid>
-          )
-        })}
+        <Grid item xs={12}>
+          <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+            Select time limit:
+          </Typography>
+        </Grid>
         <Grid item xs={2}>
           <Typography style={{ width: 170 }}>
             Time Machine {new Date(selectedTimeLimitMillis).toLocaleString()}
@@ -205,6 +193,35 @@ export function TimeMachineComponent(): JSX.Element {
             />
           </MuiPickersUtilsProvider>
         </Grid>
+        <Grid item xs={12}>
+          <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+            Select events from your ActyxOS nodes:
+          </Typography>
+        </Grid>
+        {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
+          return (
+            <Grid key={sid} item container spacing={1} xs={12}>
+              <Grid item xs={2}>
+                <Typography style={{ width: 170 }}>
+                  {sid} <br />({selectedEvents[sid] || 0}/{events})
+                </Typography>
+              </Grid>
+              <Grid item xs={2}>
+                <Slider
+                  style={{ width: 350 }}
+                  value={selectedEvents[sid] || 0}
+                  min={0}
+                  max={events}
+                  disabled={!earliestEventMillis || !latestEventMillis}
+                  onChange={(event, value) => {
+                    setSelectedEvents(addValueToOffsetMap(selectedEvents, sid, +value))
+                  }}
+                  aria-labelledby="continuous-slider"
+                />
+              </Grid>
+            </Grid>
+          )
+        })}
       </Grid>
     </div>
   )

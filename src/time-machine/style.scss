@@ -5,3 +5,9 @@ body {
   font: 100% $font-stack;
   color: $primary-color;
 }
+
+.sub-header {
+  font-size: larger !important;
+  font-weight: 500 !important;
+  text-decoration: underline !important;
+}
