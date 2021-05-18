@@ -1,14 +1,14 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { writeFileSync } = require('fs')
 const { join, relative, normalize, sep, posix } = require('path')
 const { execSync } = require('child_process')
 
-const buildFishFile = (timeMachinePath, fishPath, fishFactoryCall) => {
+const buildFishFile = (timeMachinePath, userFishPath, fishFactoryCall) => {
   console.log('⚙️ Generating fishes.ts')
 
   const normalizedTimeMachinePath = normalize(timeMachinePath)
-  const fishesExportFolder = join(normalizedTimeMachinePath, 'src', 'time-machine')
 
-  const fishesTSImportPath = './' + relative(fishesExportFolder, fishPath)
+  const fishesTSImportPath = './' + relative(normalizedTimeMachinePath, userFishPath)
   const [fishFactoryFunction] = fishFactoryCall.split(/[.(]/)
   const script = `import { Fish } from '@actyx/pond'
 
@@ -22,7 +22,7 @@ export default function fishes(): Fish<any, any>[] {
 `
 
   try {
-    writeFileSync(join(fishesExportFolder, 'fishes.ts'), script)
+    writeFileSync(join(normalizedTimeMachinePath, 'fishes.ts'), script)
   } catch (error) {
     console.error(`❌ Could not write fishes.ts: ${error}`)
   }
@@ -32,7 +32,7 @@ export default function fishes(): Fish<any, any>[] {
 const runParcelPackaging = (timeMachinePath) => {
   console.log('⚙️ Bundling and Running time-machine')
   const normalizedTimeMachinePath = normalize(timeMachinePath)
-  const indexHTMLPath = join(normalizedTimeMachinePath, 'src', 'time-machine', 'index.html')
+  const indexHTMLPath = join(normalizedTimeMachinePath, 'index.html')
   const webrootPath = join(normalizedTimeMachinePath, 'webroot')
 
   execSync(`npx parcel ${indexHTMLPath} --out-dir ${webrootPath}`, {
