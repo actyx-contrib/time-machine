@@ -1,7 +1,7 @@
-const { existsSync, readdirSync, copyFileSync } = require('fs')
+/* eslint-disable @typescript-eslint/no-var-requires */
+const { existsSync, readdirSync } = require('fs')
 const { join } = require('path')
 const { copySync } = require('fs-extra')
-const { execSync } = require('child_process')
 
 function isEmpty(path) {
   return readdirSync(path).length === 0

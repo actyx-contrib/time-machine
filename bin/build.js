@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { writeFileSync } = require('fs')
 const { join, relative, normalize, sep, posix } = require('path')
 const { execSync } = require('child_process')
