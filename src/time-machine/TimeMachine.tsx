@@ -10,23 +10,26 @@ import fishes from './fishes'
 type RelativeTiming = 'beforeBounds' | 'withinBounds' | 'afterBounds'
 
 export function TimeMachineComponent(): JSX.Element {
-  const [upperBound, setUpperBound] = useState<OffsetMap>()
-  const [startTimeMillis, setStartTimeMillis] = useState<number>()
-  const [endTimeMillis, setEndTimeMillis] = useState<number>()
-  const [currentTimeMillis, setCurrentTimeMillis] = useState<number>(0)
-  const [currentTimeMillisSelection, setCurrentTimeMillisSelection] = useState<number>(0)
-  const [selectedEventOffsetMap, setSelectedEventOffsetMap] = useState<OffsetMap>({})
+  const [allEvents, setAllEvents] = useState<OffsetMap>()
+  const [eventsBeforeTimeLimit, setEventsBeforeTimeLimit] = useState<OffsetMap>({})
+  const [selectedEvents, setSelectedEvents] = useState<OffsetMap>({})
+
+  const [earliestEventMillis, setEarliestEventMillis] = useState<number>()
+  const [latestEventMillis, setLatestEventMillis] = useState<number>()
+  const [selectedTimeLimitMillis, setSelectedTimeLimitMillis] = useState<number>(0)
+  const [timeSliderValue, setTimeSliderValue] = useState<number>(0)
+
   const [importedFishes, setImportedFishes] = useState<Fish<any, any>[]>(fishes())
   const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
-  const [tags, setTags] = React.useState('oven-fish:oven_')
+  const [selectedTags, setSelectedTags] = React.useState('oven-fish:oven_')
 
   const [fishStates, setFishStates] = useState([])
   const pond = usePond()
 
   React.useEffect(() => {
-    pond.events().currentOffsets().then(setUpperBound)
+    pond.events().currentOffsets().then(setAllEvents)
     const refresh = setInterval(() => {
-      pond.events().currentOffsets().then(setUpperBound)
+      pond.events().currentOffsets().then(setAllEvents)
     }, 10000)
     return () => {
       clearInterval(refresh)
@@ -35,58 +38,57 @@ export function TimeMachineComponent(): JSX.Element {
 
   //Reload the time boundaries whenever an earlier/later event arrives or the tags change
   React.useEffect(() => {
-    setStartTimeMillis(undefined)
-    setEndTimeMillis(undefined)
+    setEarliestEventMillis(undefined)
+    setLatestEventMillis(undefined)
     const cancelSubscriptionOnEarlist = pond.events().observeEarliest(
       {
-        query: tagsFromString(tags),
+        query: tagsFromString(selectedTags),
       },
       (event, metadata) => {
-        setStartTimeMillis(metadata.timestampMicros / 1000)
+        setEarliestEventMillis(metadata.timestampMicros / 1000)
       },
     )
     const cancelSubscriptionOnLatest = pond.events().observeLatest(
       {
-        query: tagsFromString(tags),
+        query: tagsFromString(selectedTags),
       },
       (event, metadata) => {
-        setEndTimeMillis(metadata.timestampMicros / 1000)
+        setLatestEventMillis(metadata.timestampMicros / 1000)
       },
     )
     return () => {
       cancelSubscriptionOnEarlist()
       cancelSubscriptionOnLatest()
     }
-  }, [tags])
+  }, [selectedTags])
 
   //Reapply Events on Twin after Boundary Change
   React.useEffect(() => {
-    if (!selectedEventOffsetMap) {
+    if (!selectedEvents) {
       return
     }
     reduceTwinStateFromEvents(
       pond,
-      selectedEventOffsetMap,
-      tags,
+      selectedEvents,
+      selectedTags,
       selectedFish.onEvent,
       selectedFish.initialState,
       setFishStates,
     )
-  }, [selectedEventOffsetMap])
+  }, [selectedEvents])
 
   React.useEffect(() => {
-    if (!upperBound) return
+    if (!allEvents) return
 
-    updateSelectedEventOffsetMapForAllSids()
-  }, [currentTimeMillis])
+    updateEventsBeforeTimeLimitForAllSources()
+  }, [selectedTimeLimitMillis])
 
-  console.log(upperBound)
-  if (!upperBound) {
+  if (!allEvents) {
     return <div>loading...</div>
   }
 
-  if (!currentTimeMillis) {
-    setCurrentTimeMillis(Date.now())
+  if (!selectedTimeLimitMillis) {
+    setSelectedTimeLimitMillis(Date.now())
   }
 
   return (
@@ -97,7 +99,7 @@ export function TimeMachineComponent(): JSX.Element {
         </Typography>
       </div>
       <Grid container spacing={1}>
-        {!startTimeMillis ? (
+        {!earliestEventMillis ? (
           <Grid item xs={12}>
             <Alert severity="warning">No events match the given Tags!</Alert>
           </Grid>
@@ -108,9 +110,9 @@ export function TimeMachineComponent(): JSX.Element {
         <Grid item xs={10}>
           <TextField
             style={{ width: 350 }}
-            value={tags}
+            value={selectedTags}
             type="text"
-            onChange={({ target }) => setTags(target.value)}
+            onChange={({ target }) => setSelectedTags(target.value)}
           />
         </Grid>
         <Grid item xs={2}>
@@ -140,25 +142,23 @@ export function TimeMachineComponent(): JSX.Element {
           <div>fishState: {JSON.stringify(fishStates)}</div>
           <br></br>
         </Grid>
-        {Object.entries(upperBound).map(([sid, events]) => {
-          const value = selectedEventOffsetMap[sid] || 0
+        {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
           return (
             <Grid key={sid} item container spacing={1} xs={12}>
               <Grid item xs={2}>
                 <Typography style={{ width: 170 }}>
-                  {sid} <br />({value}/{events})
+                  {sid} <br />({selectedEvents[sid] || 0}/{events})
                 </Typography>
               </Grid>
               <Grid item xs={2}>
                 <Slider
                   style={{ width: 350 }}
-                  value={value}
+                  value={selectedEvents[sid] || 0}
                   min={0}
                   max={events}
+                  disabled={!earliestEventMillis || !latestEventMillis}
                   onChange={(event, value) => {
-                    setSelectedEventOffsetMap(
-                      addValueToOffsetMap(selectedEventOffsetMap, sid, +value),
-                    )
+                    setSelectedEvents(addValueToOffsetMap(selectedEvents, sid, +value))
                   }}
                   aria-labelledby="continuous-slider"
                 />
@@ -168,21 +168,21 @@ export function TimeMachineComponent(): JSX.Element {
         })}
         <Grid item xs={2}>
           <Typography style={{ width: 170 }}>
-            Time Machine {new Date(currentTimeMillis).toLocaleString()}
+            Time Machine {new Date(selectedTimeLimitMillis).toLocaleString()}
           </Typography>
         </Grid>
         <Grid item xs={10}>
           <Slider
             style={{ width: 350 }}
-            value={currentTimeMillisSelection}
-            min={startTimeMillis ? startTimeMillis : 0}
-            max={endTimeMillis ? endTimeMillis : Date.now()}
-            disabled={!startTimeMillis || !endTimeMillis}
+            value={timeSliderValue}
+            min={earliestEventMillis ? earliestEventMillis : 0}
+            max={latestEventMillis ? latestEventMillis : Date.now()}
+            disabled={!earliestEventMillis || !latestEventMillis}
             onChange={(event, value) => {
-              setCurrentTimeMillisSelection(+value)
+              setTimeSliderValue(+value)
             }}
             onChangeCommitted={(event, value) => {
-              setCurrentTimeMillis(+value)
+              setSelectedTimeLimitMillis(+value)
             }}
             aria-labelledby="continuous-slider"
           />
@@ -193,8 +193,8 @@ export function TimeMachineComponent(): JSX.Element {
               variant="inline"
               ampm={false}
               label="Include events up to:"
-              value={currentTimeMillis}
-              disabled={!startTimeMillis || !endTimeMillis}
+              value={selectedTimeLimitMillis}
+              disabled={!earliestEventMillis || !latestEventMillis}
               onChange={(date) => {
                 if (date) {
                   setCurrentTimeMillisByDate(date)
@@ -210,23 +210,41 @@ export function TimeMachineComponent(): JSX.Element {
   )
 
   function setCurrentTimeMillisByDate(date: Date) {
-    setCurrentTimeMillis(date.getTime())
-    setCurrentTimeMillisSelection(date.getTime())
+    setSelectedTimeLimitMillis(date.getTime())
+    setTimeSliderValue(date.getTime())
   }
 
-  async function updateSelectedEventOffsetMapForAllSids() {
-    if (!upperBound) return
+  async function updateEventsBeforeTimeLimitForAllSources() {
+    if (!allEvents) return
     let newOffsets = {}
-    for (const [sid, event] of Object.entries(upperBound)) {
+    for (const [sid, events] of Object.entries(allEvents)) {
       const selectedOffset = await getLastOffsetBeforeTimestamp(
-        upperBound,
+        allEvents,
         sid,
-        currentTimeMillis * 1000,
+        selectedTimeLimitMillis * 1000,
         pond,
       )
       newOffsets = addValueToOffsetMap(newOffsets, sid, selectedOffset)
     }
-    setSelectedEventOffsetMap(newOffsets)
+    setEventsBeforeTimeLimit(newOffsets)
+    console.log('pre')
+    console.log(newOffsets)
+    console.log('post')
+    applyLimitOnSelectedEvents(newOffsets)
+  }
+
+  function applyLimitOnSelectedEvents(eventsBeforeTimeLimit: OffsetMap) {
+    let newOffsets = {}
+    console.log('second')
+    console.log(eventsBeforeTimeLimit)
+    for (const [sid, events] of Object.entries(eventsBeforeTimeLimit)) {
+      if (selectedEvents[sid] > events) {
+        newOffsets = addValueToOffsetMap(newOffsets, sid, events)
+      } else {
+        newOffsets = addValueToOffsetMap(newOffsets, sid, selectedEvents[sid])
+      }
+    }
+    setSelectedEvents(newOffsets)
   }
 }
 
