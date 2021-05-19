@@ -1,15 +1,22 @@
 import React, { useState } from 'react'
-import { ActyxEvent, Fish, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
+import { Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import { Slider, Typography, TextField, Grid, CardContent, Card } from '@material-ui/core'
 import Alert from '@material-ui/lab/Alert'
 import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
 import DateFnsUtils from '@date-io/date-fns'
 import fishes from './fishes'
-
-type RelativeTiming = 'beforeBounds' | 'withinBounds' | 'afterBounds'
+import {
+  addValueToOffsetMap,
+  getLastOffsetBeforeTimestamp,
+  reduceTwinStateFromEvents,
+  tagsFromString,
+} from './actyx-functions'
 
 export function TimeMachineComponent(): JSX.Element {
+  const importedFishes = fishes()
+  const pond = usePond()
+
   const [allEvents, setAllEvents] = useState<OffsetMap>()
   const [eventsBeforeTimeLimit, setEventsBeforeTimeLimit] = useState<OffsetMap>({})
   const [selectedEvents, setSelectedEvents] = useState<OffsetMap>({})
@@ -19,12 +26,11 @@ export function TimeMachineComponent(): JSX.Element {
   const [selectedTimeLimitMillis, setSelectedTimeLimitMillis] = useState<number>(0)
   const [timeSliderValue, setTimeSliderValue] = useState<number>(0)
 
-  const [importedFishes, setImportedFishes] = useState<Fish<any, any>[]>(fishes())
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
   const [selectedTags, setSelectedTags] = React.useState('your-fish:your-identifier')
 
   const [fishStates, setFishStates] = useState([])
-  const pond = usePond()
 
   React.useEffect(() => {
     pond.events().currentOffsets().then(setAllEvents)
@@ -245,7 +251,7 @@ export function TimeMachineComponent(): JSX.Element {
   async function updateEventsBeforeTimeLimitForAllSources() {
     if (!allEvents) return
     let newOffsets = {}
-    for (const [sid, events] of Object.entries(allEvents)) {
+    for (const [sid] of Object.entries(allEvents)) {
       const selectedOffset = await getLastOffsetBeforeTimestamp(
         allEvents,
         sid,
@@ -255,16 +261,11 @@ export function TimeMachineComponent(): JSX.Element {
       newOffsets = addValueToOffsetMap(newOffsets, sid, selectedOffset)
     }
     setEventsBeforeTimeLimit(newOffsets)
-    console.log('pre')
-    console.log(newOffsets)
-    console.log('post')
     applyLimitOnSelectedEvents(newOffsets)
   }
 
   function applyLimitOnSelectedEvents(eventsBeforeTimeLimit: OffsetMap) {
     let newOffsets = {}
-    console.log('second')
-    console.log(eventsBeforeTimeLimit)
     for (const [sid, events] of Object.entries(eventsBeforeTimeLimit)) {
       if (selectedEvents[sid] > events) {
         newOffsets = addValueToOffsetMap(newOffsets, sid, events)
@@ -274,116 +275,4 @@ export function TimeMachineComponent(): JSX.Element {
     }
     setSelectedEvents(newOffsets)
   }
-}
-
-async function compareTimestampWithOffsetBounds(
-  offsets: OffsetMap,
-  sid: string,
-  timestampMicros: number,
-  pond: Pond,
-): Promise<RelativeTiming> {
-  const earliestEvent = await getEarliestActyxEventBySid(offsets, sid, pond)
-  const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
-  if (timestampMicros < earliestEvent.meta.timestampMicros) {
-    return 'beforeBounds'
-  }
-  if (timestampMicros > latestEvent.meta.timestampMicros) {
-    return 'afterBounds'
-  }
-  return 'withinBounds'
-}
-
-async function getLastOffsetBeforeTimestamp(
-  offsets: OffsetMap,
-  sid: string,
-  timestampMicros: number,
-  pond: Pond,
-): Promise<number> {
-  const relativeTiming = await compareTimestampWithOffsetBounds(offsets, sid, timestampMicros, pond)
-  if (relativeTiming === 'beforeBounds') {
-    return 0
-  }
-  const maxOffset = offsets[sid]
-  if (relativeTiming === 'afterBounds') {
-    return maxOffset
-  }
-  //inperformant iterative search, will be replaced with binary search
-  for (let currentOffset = 0; currentOffset < maxOffset; currentOffset++) {
-    const currentEvent = await getActyxEventByOffset(sid, currentOffset, pond)
-    if (currentEvent.meta.timestampMicros > timestampMicros) {
-      return currentOffset
-    }
-  }
-  return maxOffset
-}
-
-async function getEarliestActyxEventBySid(
-  offsets: OffsetMap,
-  sid: string,
-  pond: Pond,
-): Promise<ActyxEvent<unknown>> {
-  return await getActyxEventByOffset(sid, 0, pond)
-}
-
-async function getLatestActyxEventBySid(
-  offsets: OffsetMap,
-  sid: string,
-  pond: Pond,
-): Promise<ActyxEvent<unknown>> {
-  const offset = offsets[sid]
-  return await getActyxEventByOffset(sid, offset, pond)
-}
-
-async function getActyxEventByOffset(
-  sid: string,
-  eventOffset: number,
-  pond: Pond,
-): Promise<ActyxEvent<unknown>> {
-  const lowerBound = eventOffset > 0 ? addValueToOffsetMap({}, sid, eventOffset - 1) : null
-  const upperBound = addValueToOffsetMap({}, sid, eventOffset)
-  const params = lowerBound
-    ? { upperBound: upperBound, lowerBound: lowerBound }
-    : { upperBound: upperBound }
-  const results = await pond.events().queryKnownRange(params)
-  if (results.length === 0) throw new Error('Event could not be retrieved')
-  else {
-    return results[0]
-  }
-}
-
-function reduceTwinStateFromEvents(
-  pond: Pond,
-  selectedEventOffsetMap: { readonly [x: string]: number },
-  tags: string,
-  onEventFn: (state: any, event: any, meta: any) => Reduce<unknown, unknown>,
-  initState: any,
-  callback: (state: any) => void,
-): any {
-  pond.events().queryKnownRangeChunked(
-    {
-      upperBound: selectedEventOffsetMap,
-      order: 'Asc',
-      query: tagsFromString(tags),
-    },
-    5000,
-    ({ events }) => {
-      callback(
-        events.reduce((state, { payload, meta }) => {
-          return onEventFn(state, payload, meta)
-        }, initState),
-      )
-    },
-  )
-}
-
-function tagsFromString(tags: string) {
-  try {
-    return Tags(...(tags || 'unknown').split(' '))
-  } catch (exception) {
-    return Tags('unknown')
-  }
-}
-
-function addValueToOffsetMap(offsets: OffsetMap, sid: string, events: number): OffsetMap {
-  return { ...offsets, [sid]: events }
 }
