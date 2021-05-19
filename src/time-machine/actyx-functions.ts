@@ -1,6 +1,20 @@
 import { ActyxEvent, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 
-export type RelativeTiming = 'beforeBounds' | 'withinBounds' | 'afterBounds'
+export type RelativeTiming = 'beforeRange' | 'withinRange' | 'afterRange'
+
+export function compareTimestampWithTimeRange(
+  timestampMicros: number,
+  lowerBoundMillis: number,
+  upperBoundMillis: number,
+): RelativeTiming {
+  if (timestampMicros < lowerBoundMillis) {
+    return 'beforeRange'
+  }
+  if (timestampMicros > upperBoundMillis) {
+    return 'afterRange'
+  }
+  return 'withinRange'
+}
 
 export async function compareTimestampWithOffsetBounds(
   offsets: OffsetMap,
@@ -10,13 +24,11 @@ export async function compareTimestampWithOffsetBounds(
 ): Promise<RelativeTiming> {
   const earliestEvent = await getEarliestActyxEventBySid(offsets, sid, pond)
   const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
-  if (timestampMicros < earliestEvent.meta.timestampMicros) {
-    return 'beforeBounds'
-  }
-  if (timestampMicros > latestEvent.meta.timestampMicros) {
-    return 'afterBounds'
-  }
-  return 'withinBounds'
+  return compareTimestampWithTimeRange(
+    timestampMicros,
+    earliestEvent.meta.timestampMicros,
+    latestEvent.meta.timestampMicros,
+  )
 }
 
 export async function getLastOffsetBeforeTimestamp(
@@ -26,11 +38,11 @@ export async function getLastOffsetBeforeTimestamp(
   pond: Pond,
 ): Promise<number> {
   const relativeTiming = await compareTimestampWithOffsetBounds(offsets, sid, timestampMicros, pond)
-  if (relativeTiming === 'beforeBounds') {
+  if (relativeTiming === 'beforeRange') {
     return 0
   }
   const maxOffset = offsets[sid]
-  if (relativeTiming === 'afterBounds') {
+  if (relativeTiming === 'afterRange') {
     return maxOffset
   }
   //inperformant iterative search, will be replaced with binary search
@@ -102,7 +114,7 @@ export function reduceTwinStateFromEvents(
   )
 }
 
-export function tagsFromString(tags: string) {
+export function tagsFromString(tags: string): Tags<unknown> {
   try {
     return Tags(...(tags || 'unknown').split(' '))
   } catch (exception) {
