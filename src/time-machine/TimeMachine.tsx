@@ -32,6 +32,7 @@ export function TimeMachineComponent(): JSX.Element {
 
   const [fishStates, setFishStates] = useState([])
 
+  //Look for new event offsets every x nanoseconds
   React.useEffect(() => {
     pond.events().currentOffsets().then(setAllEvents)
     const refresh = setInterval(() => {
@@ -50,7 +51,7 @@ export function TimeMachineComponent(): JSX.Element {
       {
         query: tagsFromString(selectedTags),
       },
-      (event, metadata) => {
+      (_event, metadata) => {
         setEarliestEventMillis(metadata.timestampMicros / 1000)
       },
     )
@@ -58,7 +59,7 @@ export function TimeMachineComponent(): JSX.Element {
       {
         query: tagsFromString(selectedTags),
       },
-      (event, metadata) => {
+      (_event, metadata) => {
         setLatestEventMillis(metadata.timestampMicros / 1000)
       },
     )
@@ -68,7 +69,7 @@ export function TimeMachineComponent(): JSX.Element {
     }
   }, [selectedTags])
 
-  //Reapply Events on Twin after Boundary Change
+  //Reapply events on Twin after change of selected events
   React.useEffect(() => {
     if (!selectedEvents) {
       return
@@ -169,10 +170,10 @@ export function TimeMachineComponent(): JSX.Element {
               min={earliestEventMillis ? earliestEventMillis : 0}
               max={latestEventMillis ? latestEventMillis : Date.now()}
               disabled={!earliestEventMillis || !latestEventMillis}
-              onChange={(event, value) => {
+              onChange={(_event, value) => {
                 setTimeSliderValue(+value)
               }}
-              onChangeCommitted={(event, value) => {
+              onChangeCommitted={(_event, value) => {
                 setSelectedTimeLimitMillis(+value)
               }}
               aria-labelledby="continuous-slider"
@@ -216,7 +217,7 @@ export function TimeMachineComponent(): JSX.Element {
                     min={0}
                     max={events}
                     disabled={!earliestEventMillis || !latestEventMillis}
-                    onChange={(event, value) => {
+                    onChange={(_event, value) => {
                       setSelectedEvents(addValueToOffsetMap(selectedEvents, sid, +value))
                     }}
                     aria-labelledby="continuous-slider"
@@ -232,7 +233,7 @@ export function TimeMachineComponent(): JSX.Element {
           </Typography>
           <Card>
             <CardContent>
-              <Typography gutterBottom>
+              <Typography noWrap={false}>
                 <br />
                 {JSON.stringify(fishStates)}
               </Typography>
