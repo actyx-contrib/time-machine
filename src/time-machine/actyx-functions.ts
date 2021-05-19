@@ -77,8 +77,8 @@ export async function getActyxEventByOffset(
   eventOffset: number,
   pond: Pond,
 ): Promise<ActyxEvent<unknown>> {
-  const lowerBound = eventOffset > 0 ? addValueToOffsetMap({}, sid, eventOffset - 1) : null
-  const upperBound = addValueToOffsetMap({}, sid, eventOffset)
+  const lowerBound = eventOffset > 0 ? upsertOffsetMapValue({}, sid, eventOffset - 1) : null
+  const upperBound = upsertOffsetMapValue({}, sid, eventOffset)
   const params = lowerBound
     ? { upperBound: upperBound, lowerBound: lowerBound }
     : { upperBound: upperBound }
@@ -122,6 +122,6 @@ export function tagsFromString(tags: string): Tags<unknown> {
   }
 }
 
-export function addValueToOffsetMap(offsets: OffsetMap, sid: string, events: number): OffsetMap {
+export function upsertOffsetMapValue(offsets: OffsetMap, sid: string, events: number): OffsetMap {
   return { ...offsets, [sid]: events }
 }

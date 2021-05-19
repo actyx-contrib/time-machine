@@ -7,11 +7,12 @@ import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pi
 import DateFnsUtils from '@date-io/date-fns'
 import fishes from './fishes'
 import {
-  addValueToOffsetMap,
+  upsertOffsetMapValue,
   getLastOffsetBeforeTimestamp,
   reduceTwinStateFromEvents,
   tagsFromString,
 } from './actyx-functions'
+import { SourceSlider } from './components/SourceSlider'
 
 export function TimeMachineComponent(): JSX.Element {
   const importedFishes = fishes()
@@ -204,26 +205,16 @@ export function TimeMachineComponent(): JSX.Element {
           </Grid>
           {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
             return (
-              <Grid key={sid} item container spacing={1} xs={12}>
-                <Grid item xs={2}>
-                  <Typography style={{ width: 170 }}>
-                    {sid} <br />({selectedEvents[sid] || 0}/{events})
-                  </Typography>
-                </Grid>
-                <Grid item xs={2}>
-                  <Slider
-                    style={{ width: 350 }}
-                    value={selectedEvents[sid] || 0}
-                    min={0}
-                    max={events}
-                    disabled={!earliestEventMillis || !latestEventMillis}
-                    onChange={(_event, value) => {
-                      setSelectedEvents(addValueToOffsetMap(selectedEvents, sid, +value))
-                    }}
-                    aria-labelledby="continuous-slider"
-                  />
-                </Grid>
-              </Grid>
+              <SourceSlider
+                sid={sid}
+                numberOfSelectedEvents={selectedEvents[sid] || 0}
+                numberOfAllEvents={events}
+                onEventsChanged={(events) => {
+                  setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events))
+                }}
+                disabled={!earliestEventMillis || !latestEventMillis}
+                key={sid}
+              />
             )
           })}
         </Grid>
@@ -259,7 +250,7 @@ export function TimeMachineComponent(): JSX.Element {
         selectedTimeLimitMillis * 1000,
         pond,
       )
-      newOffsets = addValueToOffsetMap(newOffsets, sid, selectedOffset)
+      newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
     }
     setEventsBeforeTimeLimit(newOffsets)
     applyLimitOnSelectedEvents(newOffsets)
@@ -269,9 +260,9 @@ export function TimeMachineComponent(): JSX.Element {
     let newOffsets = {}
     for (const [sid, events] of Object.entries(eventsBeforeTimeLimit)) {
       if (selectedEvents[sid] > events) {
-        newOffsets = addValueToOffsetMap(newOffsets, sid, events)
+        newOffsets = upsertOffsetMapValue(newOffsets, sid, events)
       } else {
-        newOffsets = addValueToOffsetMap(newOffsets, sid, selectedEvents[sid])
+        newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedEvents[sid])
       }
     }
     setSelectedEvents(newOffsets)
