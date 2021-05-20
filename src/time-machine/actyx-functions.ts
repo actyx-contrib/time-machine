@@ -60,7 +60,7 @@ export async function getEarliestActyxEventBySid(
   sid: string,
   pond: Pond,
 ): Promise<ActyxEvent<unknown>> {
-  return await getActyxEventByOffset(sid, 0, pond)
+  return await getActyxEventByOffset(sid, 1, pond)
 }
 
 export async function getLatestActyxEventBySid(
