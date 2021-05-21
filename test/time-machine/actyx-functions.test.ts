@@ -40,8 +40,7 @@ describe('Testing ActyxEventGetters', () => {
     test(`test getEarliestEventBySid with alternating source (source_${testSource})`, (done) => {
       actyxFunc.getEarliestActyxEventBySid(`source_${testSource}`, testPond).then((event) => {
         const offsetOfFirstEvent = 0
-        //TODO: Change this to checking the event.meta.offset instead of event.payload when pond 2.7.0 arrives
-        expect(event.payload).toBe(offsetOfFirstEvent)
+        expect(event.meta.offset).toBe(offsetOfFirstEvent)
         done()
       })
     })
@@ -55,8 +54,7 @@ describe('Testing ActyxEventGetters', () => {
             .getLatestActyxEventBySid(pondOffsets, `source_${testSource}`, testPond)
             .then((event) => {
               const offsetOfLastEvent = numberOfEventsPerSource - 1
-              //TODO: Change this to checking the event.meta.offset instead of event.payload when pond 2.7.0 arrives
-              expect(event.payload).toBe(offsetOfLastEvent)
+              expect(event.meta.offset).toBe(offsetOfLastEvent)
               done()
             })
         })
