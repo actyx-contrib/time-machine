@@ -46,17 +46,18 @@ export async function getLastOffsetBeforeTimestamp(
 ): Promise<number> {
   const relativeTiming = await compareTimestampWithOffsetBounds(offsets, sid, timestampMicros, pond)
   if (relativeTiming === 'beforeRange') {
-    return 0
+    return -1
   }
   const maxOffset = offsets[sid]
   if (relativeTiming === 'afterRange') {
     return maxOffset
   }
   //inperformant iterative search, will be replaced with binary search
-  for (let currentOffset = 0; currentOffset < maxOffset; currentOffset++) {
+  for (let currentOffset = 0; currentOffset <= maxOffset; currentOffset++) {
     const currentEvent = await getActyxEventByOffset(sid, currentOffset, pond)
-    if (currentEvent.meta.timestampMicros > timestampMicros) {
-      return currentOffset
+    console.log(`${currentEvent.meta.timestampMicros},  ${timestampMicros}`)
+    if (currentEvent.meta.timestampMicros >= timestampMicros) {
+      return currentOffset - 1
     }
   }
   return maxOffset
@@ -83,16 +84,16 @@ export async function getActyxEventByOffset(
   eventOffset: number,
   pond: Pond,
 ): Promise<ActyxEvent<unknown>> {
-  const lowerBound = eventOffset > 0 ? upsertOffsetMapValue({}, sid, eventOffset - 1) : null
-  const upperBound = upsertOffsetMapValue({}, sid, eventOffset)
-  const params = lowerBound
-    ? { upperBound: upperBound, lowerBound: lowerBound }
-    : { upperBound: upperBound }
-  const results = await pond.events().queryKnownRange(params)
-  if (results.length === 0) throw new Error('Event could not be retrieved')
-  else {
-    return results[0]
+  const results = await pond.events().queryKnownRange({
+    upperBound: upsertOffsetMapValue({}, sid, eventOffset),
+    lowerBound: eventOffset > 0 ? upsertOffsetMapValue({}, sid, eventOffset - 1) : undefined,
+  })
+
+  if (results.length === 0) {
+    throw new Error('Event could not be retrieved')
   }
+
+  return results[0]
 }
 
 export function reduceTwinStateFromEvents(

@@ -31,6 +31,8 @@ export function TimeMachineComponent(): JSX.Element {
   const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
   const [selectedTags, setSelectedTags] = React.useState('your-fish:your-identifier')
 
+  //const [calculatingSliderLimit, setCalculatingSliderLimit] = React.useState<boolean>(false)
+
   const [fishStates, setFishStates] = useState([])
 
   //Look for new event offsets every x nanoseconds
@@ -250,7 +252,7 @@ export function TimeMachineComponent(): JSX.Element {
         selectedTimeLimitMillis * 1000,
         pond,
       )
-      newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
+      newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset === -1 ? 0 : selectedOffset)
     }
     setEventsBeforeTimeLimit(newOffsets)
     applyLimitOnSelectedEvents(newOffsets)
