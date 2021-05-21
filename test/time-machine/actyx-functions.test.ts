@@ -33,22 +33,35 @@ describe('Testing compareTimerange', () => {
 })
 
 describe('Testing ActyxEventGetters', () => {
-  const testPond = createAlternatingSourceTestPond(3, 3)
+  const numberOfEventsPerSource = 3
+  const numberOfSources = 3
+  const testPond = createAlternatingSourceTestPond(numberOfEventsPerSource, numberOfSources)
   for (let testSource = 0; testSource < 3; testSource++)
-    test(`test getEarliestEventBy with alternating source (source_${testSource})`, (done) => {
+    test(`test getEarliestEventBySid with alternating source (source_${testSource})`, (done) => {
+      actyxFunc.getEarliestActyxEventBySid(`source_${testSource}`, testPond).then((event) => {
+        const offsetOfFirstEvent = 0
+        //TODO: Change this to checking the event.meta.offset instead of event.payload when pond 2.7.0 arrives
+        expect(event.payload).toBe(offsetOfFirstEvent)
+        done()
+      })
+    })
+  for (let testSource = 0; testSource < 3; testSource++)
+    test(`test getLatestEventBySid with alternating source (source_${testSource})`, (done) => {
       testPond
         .events()
         .currentOffsets()
         .then((pondOffsets) => {
           actyxFunc
-            .getEarliestActyxEventBySid(pondOffsets, `source_${testSource}`, testPond)
+            .getLatestActyxEventBySid(pondOffsets, `source_${testSource}`, testPond)
             .then((event) => {
-              expect(event.payload).toBe(testSource)
+              const offsetOfLastEvent = numberOfEventsPerSource - 1
+              //TODO: Change this to checking the event.meta.offset instead of event.payload when pond 2.7.0 arrives
+              expect(event.payload).toBe(offsetOfLastEvent)
               done()
             })
         })
-      testPond.dispose()
     })
+  testPond.dispose()
 })
 
 function createAlternatingSourceTestPond(
@@ -57,7 +70,7 @@ function createAlternatingSourceTestPond(
 ): Pond {
   const testPond = Pond.test()
   let globalEventCount = 0
-  for (let i = 1; i <= numberOfEventsPerSource; i++) {
+  for (let i = 0; i < numberOfEventsPerSource; i++) {
     for (let j = 0; j < numberOfSources; j++) {
       testPond.directlyPushEvents([
         {
@@ -66,7 +79,7 @@ function createAlternatingSourceTestPond(
           timestamp: BASE_DATE + globalEventCount,
           lamport: globalEventCount,
           tags: ['mock_tag'],
-          payload: globalEventCount,
+          payload: i,
         },
       ])
       globalEventCount++
@@ -82,15 +95,15 @@ function createSequentialSourceTestPond(
   const testPond = Pond.test()
   let globalEventCount = 0
   for (let i = 0; i < numberOfSources; i++) {
-    for (let j = 1; j <= numberOfEventsPerSource; j++) {
+    for (let j = 0; j < numberOfEventsPerSource; j++) {
       testPond.directlyPushEvents([
         {
-          psn: Math.floor(j),
+          psn: j,
           sourceId: `source_${i}`,
           timestamp: BASE_DATE + globalEventCount,
           lamport: globalEventCount,
           tags: ['mock_tag'],
-          payload: globalEventCount,
+          payload: j,
         },
       ])
       globalEventCount++

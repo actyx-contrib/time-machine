@@ -2,15 +2,22 @@ import { ActyxEvent, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
 
 export type RelativeTiming = 'beforeRange' | 'withinRange' | 'afterRange'
 
+/**
+ * Compares a timestamp with a timerange defined by a lower bound and an upper bound.
+ * @param timestampMicros Timestamp to compare in millis
+ * @param timeRangeStartMillis Lower bound of the time range
+ * @param timeRangeEndMillis Upper
+ * @returns
+ */
 export function compareTimestampWithTimeRange(
   timestampMicros: number,
-  lowerBoundMillis: number,
-  upperBoundMillis: number,
+  timeRangeStartMillis: number,
+  timeRangeEndMillis: number,
 ): RelativeTiming {
-  if (timestampMicros < lowerBoundMillis) {
+  if (timestampMicros < timeRangeStartMillis) {
     return 'beforeRange'
   }
-  if (timestampMicros > upperBoundMillis) {
+  if (timestampMicros > timeRangeEndMillis) {
     return 'afterRange'
   }
   return 'withinRange'
@@ -22,7 +29,7 @@ export async function compareTimestampWithOffsetBounds(
   timestampMicros: number,
   pond: Pond,
 ): Promise<RelativeTiming> {
-  const earliestEvent = await getEarliestActyxEventBySid(offsets, sid, pond)
+  const earliestEvent = await getEarliestActyxEventBySid(sid, pond)
   const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
   return compareTimestampWithTimeRange(
     timestampMicros,
@@ -56,11 +63,10 @@ export async function getLastOffsetBeforeTimestamp(
 }
 
 export async function getEarliestActyxEventBySid(
-  offsets: OffsetMap,
   sid: string,
   pond: Pond,
 ): Promise<ActyxEvent<unknown>> {
-  return await getActyxEventByOffset(sid, 1, pond)
+  return await getActyxEventByOffset(sid, 0, pond)
 }
 
 export async function getLatestActyxEventBySid(
