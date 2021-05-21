@@ -8,7 +8,7 @@ import DateFnsUtils from '@date-io/date-fns'
 import fishes from './fishes'
 import {
   upsertOffsetMapValue,
-  getLastOffsetBeforeTimestamp,
+  getLastEventOffsetBeforeTimestamp,
   reduceTwinStateFromEvents,
   tagsFromString,
 } from './actyx-functions'
@@ -246,7 +246,7 @@ export function TimeMachineComponent(): JSX.Element {
     if (!allEvents) return
     let newOffsets = {}
     for (const [sid] of Object.entries(allEvents)) {
-      const selectedOffset = await getLastOffsetBeforeTimestamp(
+      const selectedOffset = await getLastEventOffsetBeforeTimestamp(
         allEvents,
         sid,
         selectedTimeLimitMillis * 1000,
