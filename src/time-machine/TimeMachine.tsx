@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Fish, OffsetMap } from '@actyx/pond'
+import { Fish, OffsetMap, Tags } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import { Slider, Typography, TextField, Grid, CardContent, Card } from '@material-ui/core'
 import Alert from '@material-ui/lab/Alert'
@@ -12,6 +12,7 @@ import {
   querySelectedEventsChunked,
   tagsFromString,
   reduceTwinStateFromEvents,
+  whereToTagsString,
 } from './actyx-functions'
 import { SourceSlider } from './components/SourceSlider'
 
@@ -30,7 +31,7 @@ export function TimeMachineComponent(): JSX.Element {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
-  const [selectedTags, setSelectedTags] = React.useState('your-fish:your-identifier')
+  const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
 
   //const [calculatingSliderLimit, setCalculatingSliderLimit] = React.useState<boolean>(false)
 

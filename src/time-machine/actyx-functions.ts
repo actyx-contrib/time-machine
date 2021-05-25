@@ -1,4 +1,4 @@
-import { ActyxEvent, OffsetMap, Pond, Tags } from '@actyx/pond'
+import { ActyxEvent, OffsetMap, Pond, Tags, Where } from '@actyx/pond'
 
 /**
  * Chunk size for all chunk-based queries
@@ -149,14 +149,11 @@ export async function getActyxEventByOffset(
 }
 
 /**
- * Calculates a state from the given twin-onEvent-Function,
- *  its initial state and the events which are selected by the given offsets
- * @param pond The pond from which the events are taken
- * @param offsets Offsets which dictate the range of events that are applied to the twin
- * @param tags Only event that match these tags will be applied to te twin
- * @param onEventFn The on-event-function of the twin
- * @param initState The initial state of the twin
- * @param callback Function which will be called with the new twin-state
+ * Queries the pond for events that match the given tags and offsets. The callback is called for every chunk of events.
+ * @param pond The pond from which the events are taken.
+ * @param offsets Offsets which dictate the range of events that are included in the query.
+ * @param tags Only events that match these tags will be included in the query.
+ * @param callback Function which will be called with each chunk of events
  */
 export function querySelectedEventsChunked(
   pond: Pond,
@@ -177,6 +174,13 @@ export function querySelectedEventsChunked(
   )
 }
 
+/**
+ * Calculates a twin-state by reducing the given array of events onto an initial state.
+ * @param events The array of events to be applied to the twin.
+ * @param onEventFn The on-event-function of the twin.
+ * @param initState Initial state of the twin.
+ * @returns The state of the twin after applying all events.
+ */
 export function reduceTwinStateFromEvents(
   events: ActyxEvent<unknown>[],
   onEventFn: (state: any, event: any, meta: any) => any,
@@ -199,9 +203,17 @@ export function tagsFromString(tags: string): Tags<unknown> {
     return Tags('unknown')
   }
 }
+/**
+ * Joins the tags of your 'Where' into a string, separated by blank spaces.
+ * @param where 'Where' containing the tags of your twins.
+ * @returns The tags of the 'Where' joined into a string, separated by blank spaces.
+ */
+export function whereToTagsString(where: Where<any>): string {
+  return where.toString().split(' & ').join(' ').split("'").join('')
+}
 
 /**
- * Upserts a [sid: events] pair to a copy the given offsetMap and returns it.
+ * Upserts a [sid: events] pair to a copy of the given offsetMap and returns it.
  * @param offsets This offsetMap will be returned with an added value
  * @param sid sid to add
  * @param events value to add
