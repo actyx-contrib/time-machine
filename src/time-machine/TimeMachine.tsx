@@ -9,8 +9,9 @@ import fishes from './fishes'
 import {
   upsertOffsetMapValue,
   getLastEventOffsetBeforeTimestamp,
-  reduceTwinStateFromEvents,
+  querySelectedEventsChunked,
   tagsFromString,
+  reduceTwinStateFromEvents,
 } from './actyx-functions'
 import { SourceSlider } from './components/SourceSlider'
 
@@ -77,14 +78,7 @@ export function TimeMachineComponent(): JSX.Element {
     if (!selectedEvents) {
       return
     }
-    reduceTwinStateFromEvents(
-      pond,
-      selectedEvents,
-      selectedTags,
-      selectedFish.onEvent,
-      selectedFish.initialState,
-      setFishStates,
-    )
+    updateTwinState()
   }, [selectedEvents])
 
   React.useEffect(() => {
@@ -171,7 +165,7 @@ export function TimeMachineComponent(): JSX.Element {
               style={{ width: 350 }}
               value={timeSliderValue}
               min={earliestEventMillis ? earliestEventMillis : 0}
-              max={latestEventMillis ? latestEventMillis : Date.now()}
+              max={latestEventMillis ? latestEventMillis + 1 : Date.now()}
               disabled={!earliestEventMillis || !latestEventMillis}
               onChange={(_event, value) => {
                 setTimeSliderValue(+value)
@@ -236,6 +230,14 @@ export function TimeMachineComponent(): JSX.Element {
       </Grid>
     </div>
   )
+
+  async function updateTwinState() {
+    let twinState = selectedFish.initialState
+    await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
+      twinState = reduceTwinStateFromEvents(events, selectedFish.onEvent, twinState)
+    })
+    setFishStates(twinState)
+  }
 
   function setCurrentTimeMillisByDate(date: Date) {
     setSelectedTimeLimitMillis(date.getTime())

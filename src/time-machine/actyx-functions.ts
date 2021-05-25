@@ -1,4 +1,9 @@
-import { ActyxEvent, OffsetMap, Pond, Reduce, Tags } from '@actyx/pond'
+import { ActyxEvent, OffsetMap, Pond, Tags } from '@actyx/pond'
+
+/**
+ * Chunk size for all chunk-based queries
+ */
+const QUERY_CHUNK_SIZE = 5000
 
 /**
  * Type that describes the relative timeliness
@@ -81,7 +86,6 @@ export async function getLastEventOffsetBeforeTimestamp(
   //inperformant iterative search, will be replaced with binary search
   for (let currentOffset = 0; currentOffset <= maxOffset; currentOffset++) {
     const currentEvent = await getActyxEventByOffset(sid, currentOffset, pond)
-    console.log(`${currentEvent.meta.timestampMicros},  ${timestampMicros}`)
     if (currentEvent.meta.timestampMicros >= timestampMicros) {
       return currentOffset - 1
     }
@@ -154,29 +158,33 @@ export async function getActyxEventByOffset(
  * @param initState The initial state of the twin
  * @param callback Function which will be called with the new twin-state
  */
-export function reduceTwinStateFromEvents(
+export function querySelectedEventsChunked(
   pond: Pond,
   offsets: { readonly [x: string]: number },
   tags: string,
-  onEventFn: (state: any, event: any, meta: any) => Reduce<unknown, unknown>,
-  initState: any,
-  callback: (state: any) => void,
+  callback: (events: ActyxEvent[]) => void,
 ): any {
-  pond.events().queryKnownRangeChunked(
+  return pond.events().queryKnownRangeChunked(
     {
       upperBound: offsets,
       order: 'Asc',
       query: tagsFromString(tags),
     },
-    5000,
+    QUERY_CHUNK_SIZE,
     ({ events }) => {
-      callback(
-        events.reduce((state, { payload, meta }) => {
-          return onEventFn(state, payload, meta)
-        }, initState),
-      )
+      callback(events)
     },
   )
+}
+
+export function reduceTwinStateFromEvents(
+  events: ActyxEvent<unknown>[],
+  onEventFn: (state: any, event: any, meta: any) => any,
+  initState: any,
+): any {
+  return events.reduce((state, { payload, meta }) => {
+    return onEventFn(state, payload, meta)
+  }, initState)
 }
 
 /**

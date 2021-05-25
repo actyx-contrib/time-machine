@@ -85,7 +85,7 @@ describe('getLastOffsetBeforeTimestamp()', () => {
     for (let i = 0; i < numberOfEvents; i++) {
       const timestampShortlyAfterEvent = BASE_DATE + i + 1
       expect(
-        await actyxFunc.getLastOffsetBeforeTimestamp(
+        await actyxFunc.getLastEventOffsetBeforeTimestamp(
           currentOffsets,
           sid,
           timestampShortlyAfterEvent,
@@ -98,7 +98,7 @@ describe('getLastOffsetBeforeTimestamp()', () => {
   it('should return -1 for timestamp before first event in single-source pond', async () => {
     const timestampBeforeFirstEvent = BASE_DATE
     expect(
-      await actyxFunc.getLastOffsetBeforeTimestamp(
+      await actyxFunc.getLastEventOffsetBeforeTimestamp(
         currentOffsets,
         sid,
         timestampBeforeFirstEvent,
@@ -111,7 +111,7 @@ describe('getLastOffsetBeforeTimestamp()', () => {
     const timestampAfterLastEvent = BASE_DATE + numberOfEvents + 1
     const offsetOfLastEvent = numberOfEvents - 1
     expect(
-      await actyxFunc.getLastOffsetBeforeTimestamp(
+      await actyxFunc.getLastEventOffsetBeforeTimestamp(
         currentOffsets,
         sid,
         timestampAfterLastEvent,
@@ -145,6 +145,7 @@ function createAlternatingSourceTestPond(
   return testPond
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function createSequentialSourceTestPond(
   numberOfEventsPerSource: number,
   numberOfSources: number,
