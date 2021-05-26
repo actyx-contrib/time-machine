@@ -1,6 +1,7 @@
 import { Fish } from '@actyx/pond'
-import { mkOvenFish } from './fish/oven-fish/oven-fish'
+
+import Fishes from './../../example-fishes'
 
 export default function fishes(): Fish<any, any>[] {
-  return [mkOvenFish('test')]
+    return Fishes()
 }

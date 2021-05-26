@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
-import { Slider, Typography, TextField, Grid, CardContent, Card } from '@material-ui/core'
+import { Slider, Typography, TextField, Grid } from '@material-ui/core'
 import Alert from '@material-ui/lab/Alert'
 import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
 import DateFnsUtils from '@date-io/date-fns'
@@ -15,6 +15,8 @@ import {
   whereToTagsString,
 } from './actyx-functions'
 import { SourceSlider } from './components/SourceSlider'
+import { StatePanel } from './components/StatePanel'
+import { EventPanel } from './components/EventPanel'
 
 export function TimeMachineComponent(): JSX.Element {
   const importedFishes = fishes()
@@ -35,6 +37,7 @@ export function TimeMachineComponent(): JSX.Element {
 
   //const [calculatingSliderLimit, setCalculatingSliderLimit] = React.useState<boolean>(false)
 
+  const [lastAppliedEvent, setLastAppliedEvent] = useState<any>({})
   const [fishStates, setFishStates] = useState([])
 
   const MILLIS_TO_MICROS = 1000
@@ -218,18 +221,13 @@ export function TimeMachineComponent(): JSX.Element {
             )
           })}
         </Grid>
-        <Grid item xs={6}>
-          <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-            Resulting Fish-State:
-          </Typography>
-          <Card>
-            <CardContent>
-              <Typography noWrap={false}>
-                <br />
-                {JSON.stringify(fishStates)}
-              </Typography>
-            </CardContent>
-          </Card>
+        <Grid item container xs={6} spacing={2}>
+          <Grid item xs={12}>
+            <StatePanel state={fishStates} />
+          </Grid>
+          <Grid item xs={12}>
+            <EventPanel event={lastAppliedEvent} />
+          </Grid>
         </Grid>
       </Grid>
     </div>
@@ -237,10 +235,13 @@ export function TimeMachineComponent(): JSX.Element {
 
   async function updateTwinState() {
     let twinState = selectedFish.initialState
+    let lastAppliedEvent = {}
     await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
       twinState = reduceTwinStateFromEvents(events, selectedFish.onEvent, twinState)
+      lastAppliedEvent = events[events.length - 1]
     })
     setFishStates(twinState)
+    setLastAppliedEvent(lastAppliedEvent)
   }
 
   function setCurrentTimeMicrosByDate(date: Date) {
