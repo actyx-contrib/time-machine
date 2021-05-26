@@ -8,9 +8,14 @@
   },
   "scripts": {
     "test": "jest",
-    "start": "parcel src/time-machine/index.html --out-dir build/time-machine/debug",
+    "start": "npm run import-fishes & npm run start:serve-only",
+    "start:serve-only": "parcel src/time-machine/index.html --out-dir build/time-machine/debug",
     "build": "parcel build src/time-machine/index.html --out-dir src/time-machine/release --public-url ./",
-    "package": "ax apps package src/time-machine/ax-manifest.yml"
+    "package": "ax apps package src/time-machine/ax-manifest.yml",
+    "import-fishes": "node import-fishes.js"
+  },
+  "config": {
+    "fishesFile": "./example-fishes.ts"
   },
   "keywords": [],
   "author": "",
