@@ -6,6 +6,7 @@ import Alert from '@material-ui/lab/Alert'
 import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
 import DateFnsUtils from '@date-io/date-fns'
 import fishes from './fishes'
+import ReactJson from 'react-json-view'
 import {
   upsertOffsetMapValue,
   getLastEventOffsetBeforeTimestamp,
@@ -138,12 +139,7 @@ export function TimeMachineComponent(): JSX.Element {
             <Typography>Initial State:</Typography>
           </Grid>
           <Grid item xs={10}>
-            <TextField
-              style={{ width: 350 }}
-              value={JSON.stringify(selectedFish.initialState)}
-              multiline
-              disabled
-            />
+            <ReactJson src={selectedFish.initialState} />
           </Grid>
           <Grid item xs={2}>
             <Typography>onEvent function:</Typography>
