@@ -65,6 +65,9 @@ export function TimeMachineComponent(): JSX.Element {
       },
       (_event, metadata) => {
         setEarliestEventMicros(metadata.timestampMicros)
+        if (!selectedTimeLimitMicros) {
+          setSelectedTimeLimitMicros(metadata.timestampMicros)
+        }
       },
     )
     const cancelSubscriptionOnLatest = pond.events().observeLatest(
