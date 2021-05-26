@@ -18,6 +18,7 @@ import {
 import { SourceSlider } from './components/SourceSlider'
 import { StatePanel } from './components/StatePanel'
 import { EventPanel } from './components/EventPanel'
+import { OnEventFunctionPanel } from './components/OnEventFunctionPanel'
 
 export function TimeMachineComponent(): JSX.Element {
   const importedFishes = fishes()
@@ -117,7 +118,7 @@ export function TimeMachineComponent(): JSX.Element {
         ) : null}
       </div>
       <br />
-      <Grid container spacing={2}>
+      <Grid container spacing={5}>
         <Grid container spacing={2} item xs={6}>
           <Grid item xs={12}>
             <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
@@ -141,16 +142,8 @@ export function TimeMachineComponent(): JSX.Element {
           <Grid item xs={10}>
             <ReactJson src={selectedFish.initialState} />
           </Grid>
-          <Grid item xs={2}>
-            <Typography>onEvent function:</Typography>
-          </Grid>
-          <Grid item xs={10}>
-            <TextField
-              style={{ width: 350 }}
-              value={selectedFish.onEvent.toString()}
-              multiline
-              disabled
-            />
+          <Grid item xs={12}>
+            <OnEventFunctionPanel onEventFunction={selectedFish.onEvent.toString()} />
           </Grid>
           <Grid item xs={12}>
             <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
@@ -158,10 +151,7 @@ export function TimeMachineComponent(): JSX.Element {
             </Typography>
           </Grid>
           <Grid item xs={2}>
-            <Typography style={{ width: 170 }}>
-              Date Slider (will be removed){' '}
-              {new Date(selectedTimeLimitMicros / MILLIS_TO_MICROS).toLocaleString()}
-            </Typography>
+            <Typography>Event Time Limit:</Typography>
           </Grid>
           <Grid item xs={10}>
             <Slider
