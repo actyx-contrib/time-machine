@@ -1,5 +1,7 @@
-import { OffsetMap, Pond } from '@actyx/pond'
+import { ActyxEvent, Fish, OffsetMap, Pond } from '@actyx/pond'
 import * as actyxFunc from '../../src/time-machine/actyx-functions'
+import { mkTestFish } from './test-fish/test-fish'
+import { TestFishEvent, TestFishState } from './test-fish/types'
 
 const BASE_DATE = 10000
 
@@ -120,6 +122,34 @@ describe('getLastOffsetBeforeTimestamp()', () => {
     ).toBe(offsetOfLastEvent)
   })
 })
+
+describe('reduceTwinStateFromEvents', () => {
+  let testFish: Fish<TestFishState, TestFishEvent>
+  beforeAll(() => {
+    testFish = mkTestFish('test-fish-1')
+  })
+  it('should calculate the correct state for an instance of test-fish with a given set of events', () => {
+    const events = getTestEvents()
+    const twinState = actyxFunc.reduceTwinStateFromEvents(
+      events,
+      testFish.onEvent,
+      testFish.initialState,
+    )
+    expect(twinState).toEqual({ status: 'three' })
+  })
+})
+
+function getTestEvents(): ActyxEvent[] {
+  const events: ActyxEvent[] = []
+  events.push(createTestEvent({ eventType: 'stateOneToTwo' }))
+  events.push(createTestEvent({ eventType: 'stateTwoToThree' }))
+
+  return events
+}
+
+function createTestEvent(payload: TestFishEvent, meta?): ActyxEvent {
+  return { meta: meta, payload: payload }
+}
 
 function createAlternatingSourceTestPond(
   numberOfEventsPerSource: number,
