@@ -5,6 +5,15 @@ import { TestFishEvent, TestFishState } from './test-fish/types'
 
 const BASE_DATE = 10000
 
+describe('Tags - String converters', () => {
+  it('should be reversible', () => {
+    const where = mkTestFish('test-fish-1').where
+    const tagsString = actyxFunc.whereToTagsString(where)
+    const tags = actyxFunc.tagsFromString(tagsString)
+    expect(where.toString()).toEqual(tags.toString())
+  })
+})
+
 describe('compareTimestampWithTimeRange() should', () => {
   test('return "beforeRange" for a timestamp earlier than the time range', () => {
     const earlyTimestamp = 10020
