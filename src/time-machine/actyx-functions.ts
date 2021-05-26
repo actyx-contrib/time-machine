@@ -13,20 +13,20 @@ export type RelativeTiming = 'beforeRange' | 'withinRange' | 'afterRange'
 
 /**
  * Checks whether a timestamp is inside, before or after a timerange defined by a lower bound and an upper bound.
- * @param timestampMicros Timestamp to compare in millis
- * @param timeRangeStartMillis Lower bound of the time range
- * @param timeRangeEndMillis Upper bound of the time range
+ * @param timestampMicros Timestamp to compare in micros
+ * @param timeRangeStartMicros Lower bound of the time range
+ * @param timeRangeEndMicros Upper bound of the time range
  * @returns 'beforeRange' | 'withinRange' | 'afterRange'
  */
 export function compareTimestampWithTimeRange(
   timestampMicros: number,
-  timeRangeStartMillis: number,
-  timeRangeEndMillis: number,
+  timeRangeStartMicros: number,
+  timeRangeEndMicros: number,
 ): RelativeTiming {
-  if (timestampMicros < timeRangeStartMillis) {
+  if (timestampMicros < timeRangeStartMicros) {
     return 'beforeRange'
   }
-  if (timestampMicros > timeRangeEndMillis) {
+  if (timestampMicros > timeRangeEndMicros) {
     return 'afterRange'
   }
   return 'withinRange'

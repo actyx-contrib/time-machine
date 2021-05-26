@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Fish, OffsetMap, Tags } from '@actyx/pond'
+import { Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import { Slider, Typography, TextField, Grid, CardContent, Card } from '@material-ui/core'
 import Alert from '@material-ui/lab/Alert'
@@ -24,9 +24,9 @@ export function TimeMachineComponent(): JSX.Element {
   const [eventsBeforeTimeLimit, setEventsBeforeTimeLimit] = useState<OffsetMap>({})
   const [selectedEvents, setSelectedEvents] = useState<OffsetMap>({})
 
-  const [earliestEventMillis, setEarliestEventMillis] = useState<number>()
-  const [latestEventMillis, setLatestEventMillis] = useState<number>()
-  const [selectedTimeLimitMillis, setSelectedTimeLimitMillis] = useState<number>(0)
+  const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
+  const [latestEventMicros, setLatestEventMicros] = useState<number>()
+  const [selectedTimeLimitMicros, setSelectedTimeLimitMicros] = useState<number>(0)
   const [timeSliderValue, setTimeSliderValue] = useState<number>(0)
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -36,6 +36,8 @@ export function TimeMachineComponent(): JSX.Element {
   //const [calculatingSliderLimit, setCalculatingSliderLimit] = React.useState<boolean>(false)
 
   const [fishStates, setFishStates] = useState([])
+
+  const MILLIS_TO_MICROS = 1000
 
   //Look for new event offsets every x nanoseconds
   React.useEffect(() => {
@@ -50,14 +52,14 @@ export function TimeMachineComponent(): JSX.Element {
 
   //Reload the time boundaries whenever an earlier/later event arrives or the tags change
   React.useEffect(() => {
-    setEarliestEventMillis(undefined)
-    setLatestEventMillis(undefined)
+    setEarliestEventMicros(undefined)
+    setLatestEventMicros(undefined)
     const cancelSubscriptionOnEarlist = pond.events().observeEarliest(
       {
         query: tagsFromString(selectedTags),
       },
       (_event, metadata) => {
-        setEarliestEventMillis(metadata.timestampMicros / 1000)
+        setEarliestEventMicros(metadata.timestampMicros)
       },
     )
     const cancelSubscriptionOnLatest = pond.events().observeLatest(
@@ -65,7 +67,7 @@ export function TimeMachineComponent(): JSX.Element {
         query: tagsFromString(selectedTags),
       },
       (_event, metadata) => {
-        setLatestEventMillis(metadata.timestampMicros / 1000)
+        setLatestEventMicros(metadata.timestampMicros)
       },
     )
     return () => {
@@ -86,14 +88,14 @@ export function TimeMachineComponent(): JSX.Element {
     if (!allEvents) return
 
     updateEventsBeforeTimeLimitForAllSources()
-  }, [selectedTimeLimitMillis])
+  }, [selectedTimeLimitMicros])
 
   if (!allEvents) {
     return <div>loading...</div>
   }
 
-  if (!selectedTimeLimitMillis) {
-    setSelectedTimeLimitMillis(Date.now())
+  if (!selectedTimeLimitMicros) {
+    setSelectedTimeLimitMicros(Date.now())
   }
 
   return (
@@ -102,7 +104,7 @@ export function TimeMachineComponent(): JSX.Element {
         <Typography variant="h1" component="h1" gutterBottom>
           Actyx Time Machine
         </Typography>
-        {!earliestEventMillis ? (
+        {!earliestEventMicros ? (
           <Grid item xs={12}>
             <Alert severity="warning">
               No events match the given tags. Please change your tags!
@@ -158,21 +160,22 @@ export function TimeMachineComponent(): JSX.Element {
           </Grid>
           <Grid item xs={2}>
             <Typography style={{ width: 170 }}>
-              Date Slider (will be removed) {new Date(selectedTimeLimitMillis).toLocaleString()}
+              Date Slider (will be removed){' '}
+              {new Date(selectedTimeLimitMicros / MILLIS_TO_MICROS).toLocaleString()}
             </Typography>
           </Grid>
           <Grid item xs={10}>
             <Slider
               style={{ width: 350 }}
               value={timeSliderValue}
-              min={earliestEventMillis ? earliestEventMillis : 0}
-              max={latestEventMillis ? latestEventMillis + 1 : Date.now()}
-              disabled={!earliestEventMillis || !latestEventMillis}
+              min={earliestEventMicros ? earliestEventMicros : 0}
+              max={latestEventMicros ? latestEventMicros + 1 : Date.now() * MILLIS_TO_MICROS}
+              disabled={!earliestEventMicros || !latestEventMicros}
               onChange={(_event, value) => {
                 setTimeSliderValue(+value)
               }}
               onChangeCommitted={(_event, value) => {
-                setSelectedTimeLimitMillis(+value)
+                setSelectedTimeLimitMicros(+value)
               }}
               aria-labelledby="continuous-slider"
             />
@@ -183,11 +186,11 @@ export function TimeMachineComponent(): JSX.Element {
                 variant="inline"
                 ampm={false}
                 label="Include events up to:"
-                value={selectedTimeLimitMillis}
-                disabled={!earliestEventMillis || !latestEventMillis}
+                value={selectedTimeLimitMicros / MILLIS_TO_MICROS}
+                disabled={!earliestEventMicros || !latestEventMicros}
                 onChange={(date) => {
                   if (date) {
-                    setCurrentTimeMillisByDate(date)
+                    setCurrentTimeMicrosByDate(date)
                   }
                 }}
                 onError={console.log}
@@ -209,7 +212,7 @@ export function TimeMachineComponent(): JSX.Element {
                 onEventsChanged={(events) => {
                   setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events))
                 }}
-                disabled={!earliestEventMillis || !latestEventMillis}
+                disabled={!earliestEventMicros || !latestEventMicros}
                 key={sid}
               />
             )
@@ -240,9 +243,9 @@ export function TimeMachineComponent(): JSX.Element {
     setFishStates(twinState)
   }
 
-  function setCurrentTimeMillisByDate(date: Date) {
-    setSelectedTimeLimitMillis(date.getTime())
-    setTimeSliderValue(date.getTime())
+  function setCurrentTimeMicrosByDate(date: Date) {
+    setSelectedTimeLimitMicros(date.getTime() * MILLIS_TO_MICROS)
+    setTimeSliderValue(date.getTime() * MILLIS_TO_MICROS)
   }
 
   async function updateEventsBeforeTimeLimitForAllSources() {
@@ -252,7 +255,7 @@ export function TimeMachineComponent(): JSX.Element {
       const selectedOffset = await getLastEventOffsetBeforeTimestamp(
         allEvents,
         sid,
-        selectedTimeLimitMillis * 1000,
+        selectedTimeLimitMicros,
         pond,
       )
       newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset === -1 ? 0 : selectedOffset)
