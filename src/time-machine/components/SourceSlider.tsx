@@ -17,15 +17,15 @@ export function SourceSlider({
   onEventsChanged,
 }: SourceSliderProps): JSX.Element {
   return (
-    <Grid key={sid} item container spacing={1} xs={12}>
+    <Grid key={sid} container spacing={1}>
       <Grid item xs={2}>
-        <Typography style={{ width: 170 }}>
+        <Typography>
           {sid} <br />({numberOfSelectedEvents}/{numberOfAllEvents})
         </Typography>
       </Grid>
-      <Grid item xs={2}>
+      <Grid item xs={10}>
         <Slider
-          style={{ width: 350 }}
+          style={{ maxWidth: 350 }}
           value={numberOfSelectedEvents}
           min={0}
           max={numberOfAllEvents}

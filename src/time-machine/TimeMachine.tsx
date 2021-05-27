@@ -124,9 +124,9 @@ export function TimeMachineComponent(): JSX.Element {
           </Grid>
           <Grid item xs={10}>
             <TextField
-              style={{ width: 350 }}
               value={selectedTags}
               type="text"
+              fullWidth={true}
               onChange={({ target }) => setSelectedTags(target.value)}
             />
           </Grid>
@@ -149,7 +149,7 @@ export function TimeMachineComponent(): JSX.Element {
           </Grid>
           <Grid item xs={10}>
             <Slider
-              style={{ width: 350 }}
+              style={{ maxWidth: 350 }}
               value={timeSliderValue}
               min={earliestEventMicros ? earliestEventMicros : 0}
               max={latestEventMicros ? latestEventMicros + 1 : Date.now() * MILLIS_TO_MICROS}
@@ -185,31 +185,30 @@ export function TimeMachineComponent(): JSX.Element {
               Select events from your ActyxOS nodes:
             </Typography>
           </Grid>
-
-          {!earliestEventMicros ? (
-            <Grid item xs={12}>
+          <Grid item xs={12}>
+            {!earliestEventMicros ? (
               <Alert severity="warning">
                 No events match the given tags. Please change your tags!
               </Alert>
-            </Grid>
-          ) : (
-            <div>
-              {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
-                return (
-                  <SourceSlider
-                    sid={sid}
-                    numberOfSelectedEvents={selectedEvents[sid] || 0}
-                    numberOfAllEvents={events}
-                    onEventsChanged={(events) => {
-                      setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events))
-                    }}
-                    disabled={!earliestEventMicros || !latestEventMicros}
-                    key={sid}
-                  />
-                )
-              })}
-            </div>
-          )}
+            ) : (
+              <div>
+                {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
+                  return (
+                    <SourceSlider
+                      sid={sid}
+                      numberOfSelectedEvents={selectedEvents[sid] || 0}
+                      numberOfAllEvents={events}
+                      onEventsChanged={(events) => {
+                        setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events))
+                      }}
+                      disabled={!earliestEventMicros || !latestEventMicros}
+                      key={sid}
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </Grid>
         </Grid>
         <Grid item container xs={6} spacing={2}>
           <Grid item xs={12}>
