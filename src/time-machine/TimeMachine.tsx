@@ -59,14 +59,16 @@ export function TimeMachineComponent(): JSX.Element {
   React.useEffect(() => {
     setEarliestEventMicros(undefined)
     setLatestEventMicros(undefined)
-    const cancelSubscriptionOnEarlist = pond.events().observeEarliest(
+    const cancelSubscriptionOnEarliest = pond.events().observeEarliest(
       {
         query: tagsFromString(selectedTags),
       },
       (_event, metadata) => {
         setEarliestEventMicros(metadata.timestampMicros)
-        if (!selectedTimeLimitMicros) {
+        console.log(selectedTimeLimitMicros)
+        if (selectedTimeLimitMicros === 0) {
           setSelectedTimeLimitMicros(metadata.timestampMicros)
+        } else {
         }
       },
     )
@@ -79,7 +81,7 @@ export function TimeMachineComponent(): JSX.Element {
       },
     )
     return () => {
-      cancelSubscriptionOnEarlist()
+      cancelSubscriptionOnEarliest()
       cancelSubscriptionOnLatest()
     }
   }, [selectedTags])
@@ -102,27 +104,16 @@ export function TimeMachineComponent(): JSX.Element {
     return <div>loading...</div>
   }
 
-  if (!selectedTimeLimitMicros) {
-    setSelectedTimeLimitMicros(Date.now())
-  }
-
   return (
     <div>
       <div style={{ flex: 1 }}>
-        <Typography variant="h1" component="h1" gutterBottom>
+        <Typography variant="h2" component="h2" gutterBottom>
           Actyx Time Machine
         </Typography>
-        {!earliestEventMicros ? (
-          <Grid item xs={12}>
-            <Alert severity="warning">
-              No events match the given tags. Please change your tags!
-            </Alert>
-          </Grid>
-        ) : null}
       </div>
       <br />
       <Grid container spacing={5}>
-        <Grid container spacing={2} item xs={6}>
+        <Grid container spacing={4} item xs={6}>
           <Grid item xs={12}>
             <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
               Fish properties
@@ -185,7 +176,6 @@ export function TimeMachineComponent(): JSX.Element {
                     setCurrentTimeMicrosByDate(date)
                   }
                 }}
-                onError={console.log}
                 format="yyyy/MM/dd HH:mm:ss"
               />
             </MuiPickersUtilsProvider>
@@ -195,20 +185,31 @@ export function TimeMachineComponent(): JSX.Element {
               Select events from your ActyxOS nodes:
             </Typography>
           </Grid>
-          {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
-            return (
-              <SourceSlider
-                sid={sid}
-                numberOfSelectedEvents={selectedEvents[sid] || 0}
-                numberOfAllEvents={events}
-                onEventsChanged={(events) => {
-                  setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events))
-                }}
-                disabled={!earliestEventMicros || !latestEventMicros}
-                key={sid}
-              />
-            )
-          })}
+
+          {!earliestEventMicros ? (
+            <Grid item xs={12}>
+              <Alert severity="warning">
+                No events match the given tags. Please change your tags!
+              </Alert>
+            </Grid>
+          ) : (
+            <div>
+              {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
+                return (
+                  <SourceSlider
+                    sid={sid}
+                    numberOfSelectedEvents={selectedEvents[sid] || 0}
+                    numberOfAllEvents={events}
+                    onEventsChanged={(events) => {
+                      setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events))
+                    }}
+                    disabled={!earliestEventMicros || !latestEventMicros}
+                    key={sid}
+                  />
+                )
+              })}
+            </div>
+          )}
         </Grid>
         <Grid item container xs={6} spacing={2}>
           <Grid item xs={12}>
