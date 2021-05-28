@@ -1,10 +1,7 @@
 import React, { useState } from 'react'
 import { Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
-import { Slider, Typography, TextField, Grid } from '@material-ui/core'
-import Alert from '@material-ui/lab/Alert'
-import { KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers'
-import DateFnsUtils from '@date-io/date-fns'
+import { Typography, TextField, Grid } from '@material-ui/core'
 import fishes from './fishes'
 import ReactJson from 'react-json-view'
 import {
@@ -19,6 +16,10 @@ import { SourceSlider } from './components/SourceSlider'
 import { StatePanel } from './components/StatePanel'
 import { EventPanel } from './components/EventPanel'
 import { OnEventFunctionPanel } from './components/OnEventFunctionPanel'
+import { TimeSelectionPanel } from './components/TimeSelectionPanel'
+import { TagsAlert } from './components/TagsAlert'
+
+const ACTYX_REFRESH_INTERVAL = 10000
 
 export function TimeMachineComponent(): JSX.Element {
   const importedFishes = fishes()
@@ -31,7 +32,6 @@ export function TimeMachineComponent(): JSX.Element {
   const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
   const [latestEventMicros, setLatestEventMicros] = useState<number>()
   const [selectedTimeLimitMicros, setSelectedTimeLimitMicros] = useState<number>(0)
-  const [timeSliderValue, setTimeSliderValue] = useState<number>(0)
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
@@ -42,14 +42,12 @@ export function TimeMachineComponent(): JSX.Element {
   const [lastAppliedEvent, setLastAppliedEvent] = useState<any>({})
   const [fishStates, setFishStates] = useState([])
 
-  const MILLIS_TO_MICROS = 1000
-
   //Look for new event offsets every x nanoseconds
   React.useEffect(() => {
     pond.events().currentOffsets().then(setAllEvents)
     const refresh = setInterval(() => {
       pond.events().currentOffsets().then(setAllEvents)
-    }, 10000)
+    }, ACTYX_REFRESH_INTERVAL)
     return () => {
       clearInterval(refresh)
     }
@@ -63,12 +61,11 @@ export function TimeMachineComponent(): JSX.Element {
       {
         query: tagsFromString(selectedTags),
       },
-      (_event, metadata) => {
+      (_, metadata) => {
         setEarliestEventMicros(metadata.timestampMicros)
         console.log(selectedTimeLimitMicros)
         if (selectedTimeLimitMicros === 0) {
           setSelectedTimeLimitMicros(metadata.timestampMicros)
-        } else {
         }
       },
     )
@@ -76,7 +73,7 @@ export function TimeMachineComponent(): JSX.Element {
       {
         query: tagsFromString(selectedTags),
       },
-      (_event, metadata) => {
+      (_, metadata) => {
         setLatestEventMicros(metadata.timestampMicros)
       },
     )
@@ -88,10 +85,9 @@ export function TimeMachineComponent(): JSX.Element {
 
   //Reapply events on Twin after change of selected events
   React.useEffect(() => {
-    if (!selectedEvents) {
-      return
+    if (selectedEvents) {
+      updateTwinState()
     }
-    updateTwinState()
   }, [selectedEvents])
 
   React.useEffect(() => {
@@ -137,48 +133,22 @@ export function TimeMachineComponent(): JSX.Element {
             <ReactJson src={selectedFish.initialState} />
           </Grid>
           <Grid item xs={12}>
-            <OnEventFunctionPanel onEventFunction={selectedFish.onEvent.toString()} />
+            <OnEventFunctionPanel functionCode={selectedFish.onEvent.toString()} />
           </Grid>
           <Grid item xs={12}>
             <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
               Select time limit:
             </Typography>
-          </Grid>
-          <Grid item xs={2}>
-            <Typography>Event Time Limit:</Typography>
-          </Grid>
-          <Grid item xs={10}>
-            <Slider
-              style={{ maxWidth: 350 }}
-              value={timeSliderValue}
-              min={earliestEventMicros ? earliestEventMicros : 0}
-              max={latestEventMicros ? latestEventMicros + 1 : Date.now() * MILLIS_TO_MICROS}
-              disabled={!earliestEventMicros || !latestEventMicros}
-              onChange={(_event, value) => {
-                setTimeSliderValue(+value)
-              }}
-              onChangeCommitted={(_event, value) => {
-                setSelectedTimeLimitMicros(+value)
-              }}
-              aria-labelledby="continuous-slider"
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <MuiPickersUtilsProvider utils={DateFnsUtils}>
-              <KeyboardDateTimePicker
-                variant="inline"
-                ampm={false}
-                label="Include events up to:"
-                value={selectedTimeLimitMicros / MILLIS_TO_MICROS}
-                disabled={!earliestEventMicros || !latestEventMicros}
-                onChange={(date) => {
-                  if (date) {
-                    setCurrentTimeMicrosByDate(date)
-                  }
-                }}
-                format="yyyy/MM/dd HH:mm:ss"
+            {earliestEventMicros && latestEventMicros ? (
+              <TimeSelectionPanel
+                selectedTimeLimitMicros={selectedTimeLimitMicros}
+                earliestEventMicros={earliestEventMicros}
+                latestEventMicros={latestEventMicros}
+                onTimeChange={setSelectedTimeLimitMicros}
               />
-            </MuiPickersUtilsProvider>
+            ) : (
+              <TagsAlert tagsStatus={'noMatchingEvents'} />
+            )}
           </Grid>
           <Grid item xs={12}>
             <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
@@ -186,11 +156,7 @@ export function TimeMachineComponent(): JSX.Element {
             </Typography>
           </Grid>
           <Grid item xs={12}>
-            {!earliestEventMicros ? (
-              <Alert severity="warning">
-                No events match the given tags. Please change your tags!
-              </Alert>
-            ) : (
+            {earliestEventMicros && latestEventMicros ? (
               <div>
                 {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
                   return (
@@ -207,6 +173,8 @@ export function TimeMachineComponent(): JSX.Element {
                   )
                 })}
               </div>
+            ) : (
+              <TagsAlert tagsStatus={'noMatchingEvents'} />
             )}
           </Grid>
         </Grid>
@@ -231,11 +199,6 @@ export function TimeMachineComponent(): JSX.Element {
     })
     setFishStates(twinState)
     setLastAppliedEvent(lastAppliedEvent)
-  }
-
-  function setCurrentTimeMicrosByDate(date: Date) {
-    setSelectedTimeLimitMicros(date.getTime() * MILLIS_TO_MICROS)
-    setTimeSliderValue(date.getTime() * MILLIS_TO_MICROS)
   }
 
   async function updateEventsBeforeTimeLimitForAllSources() {

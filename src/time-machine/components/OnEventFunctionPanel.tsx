@@ -3,10 +3,10 @@ import React from 'react'
 import Editor from '@monaco-editor/react'
 
 type StatePanelProps = {
-  onEventFunction: any
+  functionCode: string
 }
 
-export function OnEventFunctionPanel({ onEventFunction }: StatePanelProps): JSX.Element {
+export function OnEventFunctionPanel({ functionCode }: StatePanelProps): JSX.Element {
   return (
     <div>
       <Grid item xs={12}>
@@ -20,7 +20,7 @@ export function OnEventFunctionPanel({ onEventFunction }: StatePanelProps): JSX.
               height="20vh"
               options={{ readOnly: true }}
               defaultLanguage="javascript"
-              defaultValue={onEventFunction}
+              defaultValue={functionCode}
             />
           </CardContent>
         </Card>
