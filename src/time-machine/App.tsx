@@ -37,7 +37,7 @@ export function App(): JSX.Element {
   const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
   const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
 
-  //const [calculatingSliderLimit, setCalculatingSliderLimit] = React.useState<boolean>(false)
+  const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
 
   const [lastAppliedEvent, setLastAppliedEvent] = useState<any>({})
   const [fishStates, setFishStates] = useState([])
@@ -140,12 +140,18 @@ export function App(): JSX.Element {
             <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
               Select time limit:
             </Typography>
-            {earliestEventMicros && latestEventMicros ? (
+            {earliestEventMicros && latestEventMicros && selectedTimeLimitMicros > 0 ? (
               <TimeSelectionPanel
                 selectedTimeLimitMicros={selectedTimeLimitMicros}
                 earliestEventMicros={earliestEventMicros}
                 latestEventMicros={latestEventMicros}
-                onTimeChange={setSelectedTimeLimitMicros}
+                disabled={calculatingOffsetLimits}
+                onTimeChange={(time) => {
+                  if (time !== selectedTimeLimitMicros) {
+                    setCalculatingOffsetLimits(true)
+                    setSelectedTimeLimitMicros(time)
+                  }
+                }}
               />
             ) : (
               <TagsAlert tagsStatus={'noMatchingEvents'} />
@@ -168,7 +174,9 @@ export function App(): JSX.Element {
                       onEventsChanged={(events) => {
                         setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
                       }}
-                      disabled={!earliestEventMicros || !latestEventMicros}
+                      disabled={
+                        !earliestEventMicros || !latestEventMicros || calculatingOffsetLimits
+                      }
                       key={sid}
                     />
                   )
@@ -216,6 +224,7 @@ export function App(): JSX.Element {
     }
     setEventsBeforeTimeLimit(newOffsets)
     applyLimitOnSelectedEvents(newOffsets)
+    setCalculatingOffsetLimits(false)
   }
 
   function applyLimitOnSelectedEvents(eventsBeforeTimeLimit: OffsetMap) {

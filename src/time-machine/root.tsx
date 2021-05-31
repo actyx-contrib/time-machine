@@ -11,7 +11,9 @@ const onError = () => {
 
 ReactDOM.render(
   <Pond loadComponent={<ActyxLoadingView />} onError={onError}>
-    <App />
+    <div style={{ margin: '30px 20px' }}>
+      <App />
+    </div>
   </Pond>,
   document.getElementById('root'),
 )

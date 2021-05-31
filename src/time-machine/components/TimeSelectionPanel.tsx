@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Grid, Typography, Slider } from '@material-ui/core'
+import { Grid, Typography, Slider, CircularProgress } from '@material-ui/core'
 import DateFnsUtils from '@date-io/date-fns'
 import { MuiPickersUtilsProvider, KeyboardDateTimePicker } from '@material-ui/pickers'
 
@@ -7,6 +7,7 @@ type TimeSelectionPanelProps = {
   selectedTimeLimitMicros: number
   earliestEventMicros: number
   latestEventMicros: number
+  disabled: boolean
   onTimeChange: (time: number) => void
 }
 
@@ -14,9 +15,13 @@ export function TimeSelectionPanel({
   selectedTimeLimitMicros,
   earliestEventMicros,
   latestEventMicros,
+  disabled,
   onTimeChange,
 }: TimeSelectionPanelProps): JSX.Element {
-  const [timeSliderValue, setTimeSliderValue] = useState<number>(selectedTimeLimitMicros)
+  const [timeSliderValueMicros, setTimeSliderValueMicros] =
+    useState<number>(selectedTimeLimitMicros)
+  const [timePickerValueMicros, setTimePickerValueMicros] =
+    useState<number>(selectedTimeLimitMicros)
 
   return (
     <div>
@@ -26,37 +31,51 @@ export function TimeSelectionPanel({
       <Grid item xs={10}>
         <Slider
           style={{ maxWidth: 350 }}
-          value={timeSliderValue}
+          value={timeSliderValueMicros}
           min={earliestEventMicros}
           max={latestEventMicros + 1}
-          disabled={!earliestEventMicros || !latestEventMicros}
+          disabled={disabled}
           onChange={(_event, value) => {
-            setTimeSliderValue(+value)
+            setTimeSliderValueMicros(+value)
           }}
           onChangeCommitted={(_event, value) => {
+            setTimePickerValueMicros(+value)
             onTimeChange(+value)
           }}
           aria-labelledby="continuous-slider"
         />
       </Grid>
-      <Grid item xs={12}>
-        <MuiPickersUtilsProvider utils={DateFnsUtils}>
-          <KeyboardDateTimePicker
-            variant="inline"
-            ampm={false}
-            label="Include events up to:"
-            value={microsToMillis(selectedTimeLimitMicros)}
-            disabled={!earliestEventMicros || !latestEventMicros}
-            onChange={(date) => {
-              if (date) {
-                const dateMicros = dateToMicros(date)
-                onTimeChange(dateMicros)
-                setTimeSliderValue(dateMicros)
-              }
-            }}
-            format="yyyy/MM/dd HH:mm:ss"
-          />
-        </MuiPickersUtilsProvider>
+      <Grid item container xs={12}>
+        <Grid item>
+          <MuiPickersUtilsProvider utils={DateFnsUtils}>
+            <KeyboardDateTimePicker
+              variant="inline"
+              ampm={false}
+              label="Include events up to:"
+              value={microsToMillis(timePickerValueMicros)}
+              disabled={disabled}
+              autoOk={true}
+              // eslint-disable-next-line @typescript-eslint/no-empty-function
+              onChange={() => {}}
+              onAccept={(date) => {
+                if (date) {
+                  const dateMicros = dateToMicros(date)
+                  setTimePickerValueMicros(dateMicros)
+                }
+              }}
+              onClose={() => {
+                setTimeSliderValueMicros(timePickerValueMicros)
+                onTimeChange(timePickerValueMicros)
+              }}
+              format="yyyy/MM/dd HH:mm:ss"
+            />
+          </MuiPickersUtilsProvider>
+        </Grid>
+        {disabled ? (
+          <Grid item>
+            <CircularProgress hidden={!disabled} />
+          </Grid>
+        ) : null}
       </Grid>
     </div>
   )
