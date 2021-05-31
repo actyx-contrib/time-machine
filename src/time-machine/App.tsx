@@ -38,6 +38,7 @@ export function App(): JSX.Element {
   const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
 
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
+  const [calculatingTwinState, setCalculatingTwinState] = React.useState<boolean>(false)
 
   const [lastAppliedEvent, setLastAppliedEvent] = useState<any>({})
   const [fishStates, setFishStates] = useState([])
@@ -147,10 +148,7 @@ export function App(): JSX.Element {
                 latestEventMicros={latestEventMicros}
                 disabled={calculatingOffsetLimits}
                 onTimeChange={(time) => {
-                  if (time !== selectedTimeLimitMicros) {
-                    setCalculatingOffsetLimits(true)
-                    setSelectedTimeLimitMicros(time)
-                  }
+                  setSelectedTimeLimitMicros(time)
                 }}
               />
             ) : (
@@ -174,9 +172,7 @@ export function App(): JSX.Element {
                       onEventsChanged={(events) => {
                         setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
                       }}
-                      disabled={
-                        !earliestEventMicros || !latestEventMicros || calculatingOffsetLimits
-                      }
+                      disabled={calculatingTwinState || calculatingOffsetLimits}
                       key={sid}
                     />
                   )
@@ -200,6 +196,7 @@ export function App(): JSX.Element {
   )
 
   async function updateTwinState() {
+    setCalculatingTwinState(true)
     let twinState = selectedFish.initialState
     let lastAppliedEvent = {}
     await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
@@ -208,9 +205,11 @@ export function App(): JSX.Element {
     })
     setFishStates(twinState)
     setLastAppliedEvent(lastAppliedEvent)
+    setCalculatingTwinState(false)
   }
 
   async function updateEventsBeforeTimeLimitForAllSources() {
+    setCalculatingOffsetLimits(true)
     if (!allEvents) return
     let newOffsets = {}
     for (const [sid] of Object.entries(allEvents)) {

@@ -1,5 +1,5 @@
 import { Slider, Typography, Grid } from '@material-ui/core'
-import React from 'react'
+import React, { useState } from 'react'
 
 type SourceSliderProps = {
   sid: string
@@ -16,6 +16,8 @@ export function SourceSlider({
   disabled,
   onEventsChanged,
 }: SourceSliderProps): JSX.Element {
+  const [sliderValue, setSliderValue] = useState<number>(numberOfSelectedEvents)
+
   return (
     <Grid key={sid} container spacing={1}>
       <Grid item xs={2}>
@@ -26,11 +28,14 @@ export function SourceSlider({
       <Grid item xs={10}>
         <Slider
           style={{ maxWidth: 350 }}
-          value={numberOfSelectedEvents}
+          value={sliderValue}
           min={0}
           max={numberOfAllEvents}
           disabled={disabled}
           onChange={(_event, value) => {
+            setSliderValue(+value)
+          }}
+          onChangeCommitted={(_event, value) => {
             onEventsChanged(+value)
           }}
           aria-labelledby="continuous-slider"
