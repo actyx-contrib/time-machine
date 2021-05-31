@@ -120,6 +120,7 @@ export function App(): JSX.Element {
           </Grid>
           <Grid item xs={10}>
             <TextField
+              error={!(earliestEventMicros && latestEventMicros)}
               value={selectedTags}
               type="text"
               fullWidth={true}
@@ -162,10 +163,10 @@ export function App(): JSX.Element {
                   return (
                     <SourceSlider
                       sid={sid}
-                      numberOfSelectedEvents={selectedEvents[sid] || 0}
-                      numberOfAllEvents={events}
+                      numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
+                      numberOfAllEvents={events + 1}
                       onEventsChanged={(events) => {
-                        setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events))
+                        setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
                       }}
                       disabled={!earliestEventMicros || !latestEventMicros}
                       key={sid}
