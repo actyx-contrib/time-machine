@@ -3,7 +3,7 @@ import React from 'react'
 import ReactJson from 'react-json-view'
 
 type StatePanelProps = {
-  state: any
+  state: { [p: string]: unknown }
 }
 
 export function StatePanel({ state }: StatePanelProps): JSX.Element {

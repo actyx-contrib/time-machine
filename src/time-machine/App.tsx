@@ -35,7 +35,7 @@ const ACTYX_REFRESH_INTERVAL = 10000
  */
 export function App(): JSX.Element {
   //Import fishes from user-supplied fishes.ts
-  const importedFishes: Fish<any, any>[] = fishes()
+  const importedFishes: Fish<{ [p: string]: unknown }, { [p: string]: unknown }>[] = fishes()
 
   const pond = usePond()
 
@@ -53,7 +53,7 @@ export function App(): JSX.Element {
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
   const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
 
-  const [recentEvent, setRecentEvent] = useState<any>({})
+  const [recentEvent, setRecentEvent] = useState<{ [p: string]: unknown }>({})
   const [fishState, setFishState] = useState({})
 
   //Look for new event offsets every x nanoseconds
@@ -77,7 +77,6 @@ export function App(): JSX.Element {
       },
       (_, metadata) => {
         setEarliestEventMicros(metadata.timestampMicros)
-        console.log(selectedTimeLimitMicros)
         if (selectedTimeLimitMicros === 0) {
           setSelectedTimeLimitMicros(metadata.timestampMicros)
         }
@@ -117,6 +116,7 @@ export function App(): JSX.Element {
     updateSelectableEvents()
   }, [selectedTimeLimitMicros])
 
+  //Update selected events when max selectable events changes
   React.useEffect(() => {
     applyLimitOnSelectedEvents()
   }, [selectableEvents])
@@ -149,7 +149,6 @@ export function App(): JSX.Element {
                 id="demo-simple-select"
                 value={selectedFishIndex}
                 onChange={(event) => {
-                  console.log(`1. ${selectedFishIndex}`)
                   setSelectedFishIndex(event.target.value as number)
                 }}
               >
@@ -292,7 +291,7 @@ export function App(): JSX.Element {
   }
 
   /**
-   * Limits selected events when selectable events value has become lower than selected events value.
+   * Limits selected events when the max selectable events value has become lower than selected events value.
    */
   function applyLimitOnSelectedEvents() {
     let newOffsets = {}

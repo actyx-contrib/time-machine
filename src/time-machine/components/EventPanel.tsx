@@ -3,7 +3,7 @@ import React from 'react'
 import ReactJson from 'react-json-view'
 
 type EventPanelProps = {
-  event: any
+  event: { [p: string]: unknown }
 }
 
 export function EventPanel({ event }: EventPanelProps): JSX.Element {
