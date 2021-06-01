@@ -29,12 +29,18 @@ import { TagsAlert } from './components/TagsAlert'
 
 const ACTYX_REFRESH_INTERVAL = 10000
 
+/**
+ *
+ * @returns Main component of the Actyx Time Machine
+ */
 export function App(): JSX.Element {
+  //Import fishes from user-supplied fishes.ts
   const importedFishes: Fish<any, any>[] = fishes()
+
   const pond = usePond()
 
   const [allEvents, setAllEvents] = useState<OffsetMap>()
-  const [eventsBeforeTimeLimit, setEventsBeforeTimeLimit] = useState<OffsetMap>({})
+  const [selectableEvents, setSelectableEvents] = useState<OffsetMap>({})
   const [selectedEvents, setSelectedEvents] = useState<OffsetMap>({})
 
   const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
@@ -47,7 +53,7 @@ export function App(): JSX.Element {
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
   const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
 
-  const [lastAppliedEvent, setLastAppliedEvent] = useState<any>({})
+  const [recentEvent, setRecentEvent] = useState<any>({})
   const [fishState, setFishState] = useState({})
 
   //Look for new event offsets every x nanoseconds
@@ -91,21 +97,24 @@ export function App(): JSX.Element {
     }
   }, [selectedTags])
 
-  //Reapply events on Twin after change of selected events
+  //Reapply events on fishes after change of selected events
   React.useEffect(() => {
     if (selectedEvents) {
-      updateFishStateAndLastAppliedEvent()
+      updateFishStateAndRecentEvent()
     }
   }, [selectedEvents, selectedTags])
 
+  //Update tags when a new fish is selected by the user
   React.useEffect(() => {
-    setSelectedTags(whereToTagsString(importedFishes[selectedFishIndex].where))
+    const tagsFromNewFish = whereToTagsString(importedFishes[selectedFishIndex].where)
+    setSelectedTags(tagsFromNewFish)
   }, [selectedFishIndex])
 
+  //Update selectable events when time limit changes
   React.useEffect(() => {
     if (!allEvents) return
 
-    updateEventsBeforeTimeLimitForAllSources()
+    updateSelectableEvents()
   }, [selectedTimeLimitMicros])
 
   if (!allEvents) {
@@ -204,7 +213,7 @@ export function App(): JSX.Element {
           <Grid item xs={12}>
             {earliestEventMicros && latestEventMicros ? (
               <div>
-                {Object.entries(eventsBeforeTimeLimit).map(([sid, events]) => {
+                {Object.entries(selectableEvents).map(([sid, events]) => {
                   return (
                     <SourceSlider
                       sid={sid}
@@ -229,14 +238,19 @@ export function App(): JSX.Element {
             <StatePanel state={fishState} />
           </Grid>
           <Grid item xs={12}>
-            <EventPanel event={lastAppliedEvent} />
+            <EventPanel event={recentEvent} />
           </Grid>
         </Grid>
       </Grid>
     </div>
   )
 
-  async function updateFishStateAndLastAppliedEvent() {
+  /**
+   * Calculates a new state for the currently selected fish by reducing the state from the selected events.
+   * The events are queried from ActyxOS.
+   * The last event that is applied while calculating the new state is set as the new displayed most recent event.
+   */
+  async function updateFishStateAndRecentEvent() {
     setCalculatingFishState(true)
     let twinState = importedFishes[selectedFishIndex].initialState
     let lastAppliedEvent = {}
@@ -249,11 +263,14 @@ export function App(): JSX.Element {
       lastAppliedEvent = events[events.length - 1]
     })
     setFishState(twinState)
-    setLastAppliedEvent(lastAppliedEvent)
+    setRecentEvent(lastAppliedEvent)
     setCalculatingFishState(false)
   }
 
-  async function updateEventsBeforeTimeLimitForAllSources() {
+  /**
+   * Update selectable events by restricting them to events that happened before selected time limit.
+   */
+  async function updateSelectableEvents() {
     setCalculatingOffsetLimits(true)
     if (!allEvents) return
     let newOffsets = {}
@@ -266,11 +283,14 @@ export function App(): JSX.Element {
       )
       newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset === -1 ? 0 : selectedOffset)
     }
-    setEventsBeforeTimeLimit(newOffsets)
+    setSelectableEvents(newOffsets)
     applyLimitOnSelectedEvents(newOffsets)
     setCalculatingOffsetLimits(false)
   }
 
+  /**
+   * Limits selected events when selectable events value has become lower than selected events value.
+   */
   function applyLimitOnSelectedEvents(eventsBeforeTimeLimit: OffsetMap) {
     let newOffsets = {}
     for (const [sid, events] of Object.entries(eventsBeforeTimeLimit)) {
