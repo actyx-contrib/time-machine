@@ -41,7 +41,6 @@ export function App(): JSX.Element {
   const [latestEventMicros, setLatestEventMicros] = useState<number>()
   const [selectedTimeLimitMicros, setSelectedTimeLimitMicros] = useState<number>(0)
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedFishIndex, setSelectedFishIndex] = useState<number>(0)
   const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
 
@@ -95,9 +94,9 @@ export function App(): JSX.Element {
   //Reapply events on Twin after change of selected events
   React.useEffect(() => {
     if (selectedEvents) {
-      updateFishState()
+      updateFishStateAndLastAppliedEvent()
     }
-  }, [selectedEvents])
+  }, [selectedEvents, selectedTags])
 
   React.useEffect(() => {
     setSelectedTags(whereToTagsString(importedFishes[selectedFishIndex].where))
@@ -237,7 +236,7 @@ export function App(): JSX.Element {
     </div>
   )
 
-  async function updateFishState() {
+  async function updateFishStateAndLastAppliedEvent() {
     setCalculatingFishState(true)
     let twinState = importedFishes[selectedFishIndex].initialState
     let lastAppliedEvent = {}
