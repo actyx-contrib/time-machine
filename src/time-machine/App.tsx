@@ -1,7 +1,15 @@
 import React, { useState } from 'react'
 import { Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
-import { Typography, TextField, Grid } from '@material-ui/core'
+import {
+  Typography,
+  TextField,
+  Grid,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+} from '@material-ui/core'
 import fishes from './fishes'
 import ReactJson from 'react-json-view'
 import {
@@ -22,7 +30,7 @@ import { TagsAlert } from './components/TagsAlert'
 const ACTYX_REFRESH_INTERVAL = 10000
 
 export function App(): JSX.Element {
-  const importedFishes = fishes()
+  const importedFishes: Fish<any, any>[] = fishes()
   const pond = usePond()
 
   const [allEvents, setAllEvents] = useState<OffsetMap>()
@@ -34,14 +42,14 @@ export function App(): JSX.Element {
   const [selectedTimeLimitMicros, setSelectedTimeLimitMicros] = useState<number>(0)
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [selectedFish, setSelectedFish] = useState<Fish<any, any>>(importedFishes[0])
+  const [selectedFishIndex, setSelectedFishIndex] = useState<number>(0)
   const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
 
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
-  const [calculatingTwinState, setCalculatingTwinState] = React.useState<boolean>(false)
+  const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
 
   const [lastAppliedEvent, setLastAppliedEvent] = useState<any>({})
-  const [fishStates, setFishStates] = useState([])
+  const [fishState, setFishState] = useState({})
 
   //Look for new event offsets every x nanoseconds
   React.useEffect(() => {
@@ -87,9 +95,13 @@ export function App(): JSX.Element {
   //Reapply events on Twin after change of selected events
   React.useEffect(() => {
     if (selectedEvents) {
-      updateTwinState()
+      updateFishState()
     }
   }, [selectedEvents])
+
+  React.useEffect(() => {
+    setSelectedTags(whereToTagsString(importedFishes[selectedFishIndex].where))
+  }, [selectedFishIndex])
 
   React.useEffect(() => {
     if (!allEvents) return
@@ -109,8 +121,36 @@ export function App(): JSX.Element {
         </Typography>
       </div>
       <br />
+
       <Grid container spacing={5}>
         <Grid container spacing={4} item xs={6}>
+          <Grid item xs={12}>
+            <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+              Select fish:
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <FormControl>
+              <InputLabel id="demo-simple-select-label">Select from imported fishes</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={selectedFishIndex}
+                onChange={(event) => {
+                  console.log(`1. ${selectedFishIndex}`)
+                  setSelectedFishIndex(event.target.value as number)
+                }}
+              >
+                {importedFishes.map((fish, index) => {
+                  return (
+                    <MenuItem key={index} value={index}>
+                      {fish.where.toString()}
+                    </MenuItem>
+                  )
+                })}
+              </Select>
+            </FormControl>
+          </Grid>
           <Grid item xs={12}>
             <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
               Fish properties
@@ -132,10 +172,12 @@ export function App(): JSX.Element {
             <Typography>Initial State:</Typography>
           </Grid>
           <Grid item xs={10}>
-            <ReactJson src={selectedFish.initialState} />
+            <ReactJson src={importedFishes[selectedFishIndex].initialState} />
           </Grid>
           <Grid item xs={12}>
-            <OnEventFunctionPanel functionCode={selectedFish.onEvent.toString()} />
+            <OnEventFunctionPanel
+              functionCode={importedFishes[selectedFishIndex].onEvent.toString()}
+            />
           </Grid>
           <Grid item xs={12}>
             <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
@@ -172,7 +214,7 @@ export function App(): JSX.Element {
                       onEventsChanged={(events) => {
                         setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
                       }}
-                      disabled={calculatingTwinState || calculatingOffsetLimits}
+                      disabled={calculatingFishState || calculatingOffsetLimits}
                       key={sid}
                     />
                   )
@@ -185,7 +227,7 @@ export function App(): JSX.Element {
         </Grid>
         <Grid item container xs={6} spacing={2}>
           <Grid item xs={12}>
-            <StatePanel state={fishStates} />
+            <StatePanel state={fishState} />
           </Grid>
           <Grid item xs={12}>
             <EventPanel event={lastAppliedEvent} />
@@ -195,17 +237,21 @@ export function App(): JSX.Element {
     </div>
   )
 
-  async function updateTwinState() {
-    setCalculatingTwinState(true)
-    let twinState = selectedFish.initialState
+  async function updateFishState() {
+    setCalculatingFishState(true)
+    let twinState = importedFishes[selectedFishIndex].initialState
     let lastAppliedEvent = {}
     await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
-      twinState = reduceTwinStateFromEvents(events, selectedFish.onEvent, twinState)
+      twinState = reduceTwinStateFromEvents(
+        events,
+        importedFishes[selectedFishIndex].onEvent,
+        twinState,
+      )
       lastAppliedEvent = events[events.length - 1]
     })
-    setFishStates(twinState)
+    setFishState(twinState)
     setLastAppliedEvent(lastAppliedEvent)
-    setCalculatingTwinState(false)
+    setCalculatingFishState(false)
   }
 
   async function updateEventsBeforeTimeLimitForAllSources() {

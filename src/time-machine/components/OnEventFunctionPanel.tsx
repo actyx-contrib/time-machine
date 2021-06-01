@@ -20,7 +20,7 @@ export function OnEventFunctionPanel({ functionCode }: StatePanelProps): JSX.Ele
               height="20vh"
               options={{ readOnly: true }}
               defaultLanguage="javascript"
-              defaultValue={functionCode}
+              value={functionCode}
             />
           </CardContent>
         </Card>
