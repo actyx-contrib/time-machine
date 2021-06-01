@@ -8,7 +8,7 @@ const { writeFileSync, existsSync } = require('fs')
 const args = yargs.option('path', {
   type: 'string',
   demandOption: 'false',
-  default: process.env.npm_package_config_fishesFile,
+  default: process.env.npm_package_config_fishesfile,
   describe: 'Path to the .ts file which holds your fishes as a default export',
 }).argv
 

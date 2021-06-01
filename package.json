@@ -1,6 +1,6 @@
 {
   "name": "actyx-time-machine",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "",
   "main": "index.js",
   "bin": {
@@ -15,7 +15,7 @@
     "import-fishes": "node import-fishes.js"
   },
   "config": {
-    "fishesFile": "./example-fishes.ts"
+    "fishesfile": "./example-fishes.ts"
   },
   "keywords": [],
   "author": "",

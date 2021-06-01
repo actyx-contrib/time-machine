@@ -9,4 +9,4 @@ src/**/*.js
 *.tgz
 
 .vscode/launch.json
-src/time-machine/fishes.ts
+example-fishes.ts
