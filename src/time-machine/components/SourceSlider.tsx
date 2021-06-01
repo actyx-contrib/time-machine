@@ -18,6 +18,10 @@ export function SourceSlider({
 }: SourceSliderProps): JSX.Element {
   const [sliderValue, setSliderValue] = useState<number>(numberOfSelectedEvents)
 
+  React.useEffect(() => {
+    setSliderValue(numberOfSelectedEvents)
+  }, [numberOfSelectedEvents])
+
   return (
     <Grid key={sid} container spacing={1}>
       <Grid item xs={2}>

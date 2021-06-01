@@ -117,6 +117,10 @@ export function App(): JSX.Element {
     updateSelectableEvents()
   }, [selectedTimeLimitMicros])
 
+  React.useEffect(() => {
+    applyLimitOnSelectedEvents()
+  }, [selectableEvents])
+
   if (!allEvents) {
     return <div>loading...</div>
   }
@@ -284,16 +288,15 @@ export function App(): JSX.Element {
       newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset === -1 ? 0 : selectedOffset)
     }
     setSelectableEvents(newOffsets)
-    applyLimitOnSelectedEvents(newOffsets)
     setCalculatingOffsetLimits(false)
   }
 
   /**
    * Limits selected events when selectable events value has become lower than selected events value.
    */
-  function applyLimitOnSelectedEvents(eventsBeforeTimeLimit: OffsetMap) {
+  function applyLimitOnSelectedEvents() {
     let newOffsets = {}
-    for (const [sid, events] of Object.entries(eventsBeforeTimeLimit)) {
+    for (const [sid, events] of Object.entries(selectableEvents)) {
       if (selectedEvents[sid] > events) {
         newOffsets = upsertOffsetMapValue(newOffsets, sid, events)
       } else {
