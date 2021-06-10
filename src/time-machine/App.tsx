@@ -9,6 +9,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Divider,
 } from '@material-ui/core'
 import fishes from './fishes'
 import ReactJson from 'react-json-view'
@@ -135,113 +136,128 @@ export function App(): JSX.Element {
       <br />
 
       <Grid container spacing={5}>
-        <Grid container spacing={4} item xs={6}>
+        <Grid container spacing={4} item md={6} xs={12}>
           <Grid item xs={12}>
-            <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-              Select fish:
+            <Typography variant="h3" component="h3" className="section-header" gutterBottom>
+              Settings:
             </Typography>
           </Grid>
-          <Grid item xs={12}>
-            <FormControl>
-              <InputLabel id="demo-simple-select-label">Select from imported fishes</InputLabel>
-              <Select
-                labelId="demo-simple-select-label"
-                id="demo-simple-select"
-                value={selectedFishIndex}
-                onChange={(event) => {
-                  setSelectedFishIndex(event.target.value as number)
-                }}
-              >
-                {importedFishes.map((fish, index) => {
-                  return (
-                    <MenuItem key={index} value={index}>
-                      {fish.where.toString()}
-                    </MenuItem>
-                  )
-                })}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-              Fish properties
-            </Typography>
-          </Grid>
-          <Grid item xs={2}>
-            <Typography>Tags:</Typography>
-          </Grid>
-          <Grid item xs={10}>
-            <TextField
-              error={!(earliestEventMicros && latestEventMicros)}
-              value={selectedTags}
-              type="text"
-              fullWidth={true}
-              onChange={({ target }) => setSelectedTags(target.value)}
-            />
-          </Grid>
-          <Grid item xs={2}>
-            <Typography>Initial State:</Typography>
-          </Grid>
-          <Grid item xs={10}>
-            <ReactJson src={importedFishes[selectedFishIndex].initialState} />
-          </Grid>
-          <Grid item xs={12}>
-            <OnEventFunctionPanel
-              functionCode={importedFishes[selectedFishIndex].onEvent.toString()}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-              Select time limit:
-            </Typography>
-            {earliestEventMicros && latestEventMicros && selectedTimeLimitMicros > 0 ? (
-              <TimeSelectionPanel
-                selectedTimeLimitMicros={selectedTimeLimitMicros}
-                earliestEventMicros={earliestEventMicros}
-                latestEventMicros={latestEventMicros}
-                disabled={calculatingOffsetLimits}
-                onTimeChange={(time) => {
-                  setSelectedTimeLimitMicros(time)
-                }}
+          <Grid item container xs={12} spacing={4} style={{ paddingLeft: 50, paddingRight: 0 }}>
+            <Grid item xs={12}>
+              <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+                Select fish:
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl>
+                <InputLabel>Select from imported fishes</InputLabel>
+                <Select
+                  value={selectedFishIndex}
+                  onChange={(event) => {
+                    setSelectedFishIndex(event.target.value as number)
+                  }}
+                >
+                  {importedFishes.map((fish, index) => {
+                    return (
+                      <MenuItem key={index} value={index}>
+                        {fish.where.toString()}
+                      </MenuItem>
+                    )
+                  })}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+                Fish properties
+              </Typography>
+            </Grid>
+            <Grid item xs={2}>
+              <Typography>Tags:</Typography>
+            </Grid>
+            <Grid item xs={10}>
+              <TextField
+                error={!(earliestEventMicros && latestEventMicros)}
+                value={selectedTags}
+                type="text"
+                fullWidth={true}
+                onChange={({ target }) => setSelectedTags(target.value)}
               />
-            ) : (
-              <TagsAlert tagsStatus={'noMatchingEvents'} />
-            )}
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-              Select events from your ActyxOS nodes:
-            </Typography>
-          </Grid>
-          <Grid item xs={12}>
-            {earliestEventMicros && latestEventMicros ? (
-              <div>
-                {Object.entries(selectableEvents).map(([sid, events]) => {
-                  return (
-                    <SourceSlider
-                      sid={sid}
-                      numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
-                      numberOfAllEvents={events + 1}
-                      onEventsChanged={(events) => {
-                        setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
-                      }}
-                      disabled={calculatingFishState || calculatingOffsetLimits}
-                      key={sid}
-                    />
-                  )
-                })}
-              </div>
-            ) : (
-              <TagsAlert tagsStatus={'noMatchingEvents'} />
-            )}
+            </Grid>
+            <Grid item xs={2}>
+              <Typography>Initial State:</Typography>
+            </Grid>
+            <Grid item xs={10}>
+              <ReactJson src={importedFishes[selectedFishIndex].initialState} />
+            </Grid>
+            <Grid item xs={12}>
+              <OnEventFunctionPanel
+                functionCode={importedFishes[selectedFishIndex].onEvent.toString()}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+                Select time limit:
+              </Typography>
+              {earliestEventMicros && latestEventMicros && selectedTimeLimitMicros > 0 ? (
+                <TimeSelectionPanel
+                  selectedTimeLimitMicros={selectedTimeLimitMicros}
+                  earliestEventMicros={earliestEventMicros}
+                  latestEventMicros={latestEventMicros}
+                  disabled={calculatingOffsetLimits}
+                  onTimeChange={(time) => {
+                    setSelectedTimeLimitMicros(time)
+                  }}
+                />
+              ) : (
+                <TagsAlert tagsStatus={'noMatchingEvents'} />
+              )}
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+                Select events from your ActyxOS nodes:
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              {earliestEventMicros && latestEventMicros ? (
+                <div>
+                  {Object.entries(selectableEvents).map(([sid, events]) => {
+                    return (
+                      <SourceSlider
+                        sid={sid}
+                        numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
+                        numberOfAllEvents={events + 1}
+                        onEventsChanged={(events) => {
+                          setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
+                        }}
+                        disabled={calculatingFishState || calculatingOffsetLimits}
+                        key={sid}
+                      />
+                    )
+                  })}
+                </div>
+              ) : (
+                <TagsAlert tagsStatus={'noMatchingEvents'} />
+              )}
+            </Grid>
           </Grid>
         </Grid>
-        <Grid item container xs={6} spacing={2}>
+        <Grid item>
+          <Divider orientation="vertical" variant="fullWidth" />
+        </Grid>
+        <Grid item container md={6} xs={12} spacing={2}>
           <Grid item xs={12}>
-            <StatePanel state={fishState} />
+            <Typography variant="h3" component="h3" className="section-header" gutterBottom>
+              Result:
+            </Typography>
           </Grid>
-          <Grid item xs={12}>
-            <EventPanel event={recentEvent} />
+          <Grid item container xs={12} spacing={4} style={{ paddingLeft: 50, paddingRight: 0 }}>
+            <Grid item xs={12}>
+              <StatePanel state={fishState} />
+            </Grid>
+            <Grid item xs={12}>
+              <EventPanel event={recentEvent} />
+            </Grid>
           </Grid>
         </Grid>
       </Grid>
