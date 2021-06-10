@@ -1,5 +1,14 @@
 # Actyx Time Machine
 
+## About
+
+Actyx Time Machine is a graphical tool which aims to help developers troubleshoot their twins/fishes. It simulates the events that have occurred up to a selected point in time and applies them to a user-supplied twin/fish. More precisely, the selected events are given into the `onEvent`-Function of the twin/fish and the resulting state is calculated. This can help you with determining which event has led to an invalid or unexpected twin-/fish-state.
+
+## Prerequisites
+
+* You need to have access to the TypeScript source files of your twins/fishes.
+* The events you want to apply to the twin/fish must be present on your local instance of ActyxOS. (The ability to connect to external ActyxOS instances is in development)
+
 ## Setup
 
 * Clone this repository (verify that you have cloned the desired branch!)
