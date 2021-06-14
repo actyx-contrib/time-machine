@@ -50,6 +50,9 @@ export function App(): JSX.Element {
 
   const [selectedFishIndex, setSelectedFishIndex] = useState<number>(0)
   const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
+  const [selectedSyncCheckbox, setSelectedSyncCheckbox] = React.useState<{
+    readonly [x: string]: boolean
+  }>({})
 
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
   const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
@@ -227,9 +230,14 @@ export function App(): JSX.Element {
                         sid={sid}
                         numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
                         numberOfAllEvents={events + 1}
+                        syncDisabled={false}
+                        syncSelected={selectedSyncCheckbox[sid] || false}
                         onEventsChanged={(events) => {
                           setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
                         }}
+                        onSyncCheckboxChanged={(checked) =>
+                          setSelectedSyncCheckbox({ ...selectedSyncCheckbox, [sid]: checked })
+                        }
                         disabled={calculatingFishState || calculatingOffsetLimits}
                         key={sid}
                       />
