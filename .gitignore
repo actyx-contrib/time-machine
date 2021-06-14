@@ -10,3 +10,4 @@ src/**/*.js
 
 .vscode/launch.json
 example-fishes.ts
+src/time-machine/fish/*
