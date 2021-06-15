@@ -101,6 +101,7 @@ export async function getActyxEventByOffset(
   eventOffset: number,
   pond: Pond,
 ): Promise<ActyxEvent<unknown>> {
+  console.log(`${sid} + ${eventOffset}`)
   const results = await pond.events().queryKnownRange({
     upperBound: upsertOffsetMapValue({}, sid, eventOffset),
     lowerBound: eventOffset > 0 ? upsertOffsetMapValue({}, sid, eventOffset - 1) : undefined,
@@ -154,23 +155,24 @@ export async function getLastEventOffsetBeforeTimestamp(
  * event that happened directly prior to determined timestamp. This function basically calls
  * getLastEventOffsetBeforeTimestamp for every source and returns the results as an offset map.
  * @param sid sid of the source which the other sources shall be synced with
- * @param offsets Offsets which dictate the range of events that are included
+ * @param allEvents Offsets which dictate the range of events that are included
  * Use currentOffsets() if you wish to include all known events
  * @param pond The pond from which the events are taken
  * @returns Offset map with offsets that match the constraints described above
  */
 export async function syncOffsetMapOnSource(
   sid: string,
-  offsets: OffsetMap,
+  offsetOfSid: number,
+  allEvents: OffsetMap,
   pond: Pond,
 ): Promise<OffsetMap> {
-  if (offsets[sid] == undefined) {
-    console.log(`${sid} + ${JSON.stringify(offsets)}`)
-    throw new Error('sid is not part of offset map')
-  }
-  const lastSelectedEventFromSource = await getActyxEventByOffset(sid, offsets[sid], pond)
-  const syncTimestamp = lastSelectedEventFromSource.meta.timestampMicros
-  return await syncOffsetMapOnTimestamp(syncTimestamp, offsets, pond)
+  let lastSelectedEventFromSource
+  let syncTimestamp = 0
+  try {
+    lastSelectedEventFromSource = await getActyxEventByOffset(sid, offsetOfSid, pond)
+    syncTimestamp = lastSelectedEventFromSource.meta.timestampMicros
+  } catch (__error) {}
+  return await syncOffsetMapOnTimestamp(syncTimestamp, allEvents, pond)
 }
 
 /**

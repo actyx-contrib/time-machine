@@ -20,6 +20,7 @@ import {
   tagsFromString,
   reduceTwinStateFromEvents,
   whereToTagsString,
+  syncOffsetMapOnSource,
 } from './actyx-functions'
 import { SourceSlider } from './components/SourceSlider'
 import { StatePanel } from './components/StatePanel'
@@ -226,21 +227,38 @@ export function App(): JSX.Element {
               {earliestEventMicros && latestEventMicros ? (
                 <div>
                   {Object.entries(selectableEvents).map(([sid, events]) => {
+                    const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && checkboxLock
+                    const disabledByLoadingLock = calculatingFishState || calculatingOffsetLimits
+                    const disabled = disabledByLoadingLock || disabledBySyncLock
                     return (
                       <SourceSlider
                         sid={sid}
                         numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
                         numberOfAllEvents={events + 1}
-                        syncDisabled={!selectedSyncCheckboxesMap[sid] && checkboxLock}
+                        syncDisabled={disabled}
                         syncSelected={selectedSyncCheckboxesMap[sid] || false}
                         onEventsChanged={(events) => {
-                          setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
+                          if (selectedSyncCheckboxesMap[sid]) {
+                            syncOffsetMapOnSource(sid, events - 1, selectableEvents, pond).then(
+                              setSelectedEvents,
+                            )
+                          } else {
+                            setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
+                          }
                         }}
                         onSyncCheckboxChanged={(checked) => {
                           setSelectedSyncCheckbox({ ...selectedSyncCheckboxesMap, [sid]: checked })
                           setCheckboxLock(checked)
+                          if (checked) {
+                            syncOffsetMapOnSource(
+                              sid,
+                              selectedEvents[sid],
+                              selectableEvents,
+                              pond,
+                            ).then(setSelectedEvents)
+                          }
                         }}
-                        disabled={calculatingFishState || calculatingOffsetLimits}
+                        disabled={disabled}
                         key={sid}
                       />
                     )
