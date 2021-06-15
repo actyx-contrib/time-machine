@@ -7,7 +7,6 @@ type SourceSliderProps = {
   numberOfAllEvents: number
   disabled: boolean
   syncSelected: boolean
-  syncDisabled: boolean
   onEventsChanged: (events: number) => void
   onSyncCheckboxChanged: (checked: boolean) => void
 }
@@ -20,7 +19,6 @@ export function SourceSlider({
   onEventsChanged,
   onSyncCheckboxChanged,
   syncSelected,
-  syncDisabled,
 }: SourceSliderProps): JSX.Element {
   const [sliderValue, setSliderValue] = useState<number>(numberOfSelectedEvents)
 
@@ -58,7 +56,7 @@ export function SourceSlider({
           onChange={(event) => {
             onSyncCheckboxChanged(event.target.checked)
           }}
-          disabled={syncDisabled}
+          disabled={disabled}
           color="primary"
           inputProps={{ 'aria-label': 'primary checkbox' }}
         />

@@ -35,13 +35,13 @@ export function compareTimestampWithTimeRange(
 /**
  * Checks whether a timestamp is inside,
  * before or after a timerange which ranges from the earliest event
- * to the latest event in the pond within the given offsets
+ * to the latest event in the pond within the given offsets.
  * @param offsets Offsets which dictate the range of events that are included
  * Use currentOffsets() if you wish to include all known events
  * @param sid This function will only include events that were emitted by this source
  * @param timestampMicros The timestamp you want to compare to the timerange
  * @param pond The pond from which the earliest and latest event is taken
- * @returns 'beforeRange' | 'withinRange' | 'afterRange'
+ * @returns 'beforeRange' | 'withinRange' | 'afterRange'. Returns 'beforeRange' if no latest event exists.
  */
 export async function compareTimestampWithOffsetBounds(
   offsets: OffsetMap,
@@ -49,13 +49,17 @@ export async function compareTimestampWithOffsetBounds(
   timestampMicros: number,
   pond: Pond,
 ): Promise<RelativeTiming> {
-  const earliestEvent = await getEarliestActyxEventBySid(sid, pond)
-  const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
-  return compareTimestampWithTimeRange(
-    timestampMicros,
-    earliestEvent.meta.timestampMicros,
-    latestEvent.meta.timestampMicros,
-  )
+  try {
+    const earliestEvent = await getEarliestActyxEventBySid(sid, pond)
+    const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
+    return compareTimestampWithTimeRange(
+      timestampMicros,
+      earliestEvent.meta.timestampMicros,
+      latestEvent.meta.timestampMicros,
+    )
+  } catch {
+    return 'beforeRange'
+  }
 }
 
 /**
@@ -101,7 +105,6 @@ export async function getActyxEventByOffset(
   eventOffset: number,
   pond: Pond,
 ): Promise<ActyxEvent<unknown>> {
-  console.log(`${sid} + ${eventOffset}`)
   const results = await pond.events().queryKnownRange({
     upperBound: upsertOffsetMapValue({}, sid, eventOffset),
     lowerBound: eventOffset > 0 ? upsertOffsetMapValue({}, sid, eventOffset - 1) : undefined,
@@ -192,14 +195,20 @@ export async function syncOffsetMapOnTimestamp(
 ): Promise<OffsetMap> {
   const allOffsets = await Promise.all(
     Object.entries(offsets).map(async ([sid, __events]) => {
-      const lastEventOffsetBeforeTimestamp = await getLastEventOffsetBeforeTimestamp(
-        offsets,
-        sid,
-        timestampMicros + 1,
-        pond,
-      )
-      return {
-        [sid]: lastEventOffsetBeforeTimestamp,
+      try {
+        const lastEventOffsetBeforeTimestamp = await getLastEventOffsetBeforeTimestamp(
+          offsets,
+          sid,
+          timestampMicros + 1,
+          pond,
+        )
+        return {
+          [sid]: lastEventOffsetBeforeTimestamp,
+        }
+      } catch {
+        return {
+          [sid]: 0,
+        }
       }
     }),
   )

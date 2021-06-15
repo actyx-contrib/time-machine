@@ -235,7 +235,6 @@ export function App(): JSX.Element {
                         sid={sid}
                         numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
                         numberOfAllEvents={events + 1}
-                        syncDisabled={disabled}
                         syncSelected={selectedSyncCheckboxesMap[sid] || false}
                         onEventsChanged={(events) => {
                           if (selectedSyncCheckboxesMap[sid]) {
@@ -328,7 +327,7 @@ export function App(): JSX.Element {
         selectedTimeLimitMicros,
         pond,
       )
-      newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset === -1 ? 0 : selectedOffset)
+      newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
     }
     setSelectableEvents(newOffsets)
     setCalculatingOffsetLimits(false)
