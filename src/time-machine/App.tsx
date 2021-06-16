@@ -20,6 +20,7 @@ import {
   tagsFromString,
   reduceTwinStateFromEvents,
   whereToTagsString,
+  syncOffsetMapOnSource,
 } from './actyx-functions'
 import { SourceSlider } from './components/SourceSlider'
 import { StatePanel } from './components/StatePanel'
@@ -50,6 +51,10 @@ export function App(): JSX.Element {
 
   const [selectedFishIndex, setSelectedFishIndex] = useState<number>(0)
   const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
+  const [selectedSyncCheckboxesMap, setSelectedSyncCheckbox] = React.useState<{
+    readonly [x: string]: boolean
+  }>({})
+  const [checkboxLock, setCheckboxLock] = useState<boolean>(false)
 
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
   const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
@@ -222,15 +227,37 @@ export function App(): JSX.Element {
               {earliestEventMicros && latestEventMicros ? (
                 <div>
                   {Object.entries(selectableEvents).map(([sid, events]) => {
+                    const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && checkboxLock
+                    const disabledByLoadingLock = calculatingFishState || calculatingOffsetLimits
+                    const disabled = disabledByLoadingLock || disabledBySyncLock
                     return (
                       <SourceSlider
                         sid={sid}
                         numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
                         numberOfAllEvents={events + 1}
+                        syncSelected={selectedSyncCheckboxesMap[sid] || false}
                         onEventsChanged={(events) => {
-                          setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
+                          if (selectedSyncCheckboxesMap[sid]) {
+                            syncOffsetMapOnSource(sid, events - 1, selectableEvents, pond).then(
+                              setSelectedEvents,
+                            )
+                          } else {
+                            setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
+                          }
                         }}
-                        disabled={calculatingFishState || calculatingOffsetLimits}
+                        onSyncCheckboxChanged={(checked) => {
+                          setSelectedSyncCheckbox({ ...selectedSyncCheckboxesMap, [sid]: checked })
+                          setCheckboxLock(checked)
+                          if (checked) {
+                            syncOffsetMapOnSource(
+                              sid,
+                              selectedEvents[sid],
+                              selectableEvents,
+                              pond,
+                            ).then(setSelectedEvents)
+                          }
+                        }}
+                        disabled={disabled}
                         key={sid}
                       />
                     )
@@ -300,7 +327,7 @@ export function App(): JSX.Element {
         selectedTimeLimitMicros,
         pond,
       )
-      newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset === -1 ? 0 : selectedOffset)
+      newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
     }
     setSelectableEvents(newOffsets)
     setCalculatingOffsetLimits(false)

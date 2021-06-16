@@ -35,13 +35,13 @@ export function compareTimestampWithTimeRange(
 /**
  * Checks whether a timestamp is inside,
  * before or after a timerange which ranges from the earliest event
- * to the latest event in the pond within the given offsets
+ * to the latest event in the pond within the given offsets.
  * @param offsets Offsets which dictate the range of events that are included
  * Use currentOffsets() if you wish to include all known events
  * @param sid This function will only include events that were emitted by this source
  * @param timestampMicros The timestamp you want to compare to the timerange
  * @param pond The pond from which the earliest and latest event is taken
- * @returns 'beforeRange' | 'withinRange' | 'afterRange'
+ * @returns 'beforeRange' | 'withinRange' | 'afterRange'. Returns 'beforeRange' if no latest event exists.
  */
 export async function compareTimestampWithOffsetBounds(
   offsets: OffsetMap,
@@ -49,48 +49,17 @@ export async function compareTimestampWithOffsetBounds(
   timestampMicros: number,
   pond: Pond,
 ): Promise<RelativeTiming> {
-  const earliestEvent = await getEarliestActyxEventBySid(sid, pond)
-  const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
-  return compareTimestampWithTimeRange(
-    timestampMicros,
-    earliestEvent.meta.timestampMicros,
-    latestEvent.meta.timestampMicros,
-  )
-}
-
-/**
- * Searches the events in your pond for the single event which
- * happened directly prior to the given timestamp
- * @param offsets Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
- * @param sid This function will only include events in the search that come from this source
- * @param timestampMicros Timestamp for which you search the event that happenend prior
- * @param pond The pond from which the events are taken
- * @returns Returns the offset of the event which happended prior to the given timestamp.
- * Returns -1 if no events happened prior to the timestamp.
- */
-export async function getLastEventOffsetBeforeTimestamp(
-  offsets: OffsetMap,
-  sid: string,
-  timestampMicros: number,
-  pond: Pond,
-): Promise<number> {
-  const relativeTiming = await compareTimestampWithOffsetBounds(offsets, sid, timestampMicros, pond)
-  if (relativeTiming === 'beforeRange') {
-    return -1
+  try {
+    const earliestEvent = await getEarliestActyxEventBySid(sid, pond)
+    const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
+    return compareTimestampWithTimeRange(
+      timestampMicros,
+      earliestEvent.meta.timestampMicros,
+      latestEvent.meta.timestampMicros,
+    )
+  } catch {
+    return 'beforeRange'
   }
-  const maxOffset = offsets[sid]
-  if (relativeTiming === 'afterRange') {
-    return maxOffset
-  }
-  //inperformant iterative search, will be replaced with binary search
-  for (let currentOffset = 0; currentOffset <= maxOffset; currentOffset++) {
-    const currentEvent = await getActyxEventByOffset(sid, currentOffset, pond)
-    if (currentEvent.meta.timestampMicros >= timestampMicros) {
-      return currentOffset - 1
-    }
-  }
-  return maxOffset
 }
 
 /**
@@ -146,6 +115,106 @@ export async function getActyxEventByOffset(
   }
 
   return results[0]
+}
+
+/**
+ * Searches the events in your pond for the single event which
+ * happened directly prior to the given timestamp
+ * @param offsets Offsets which dictate the range of events that are included
+ * Use currentOffsets() if you wish to include all known events
+ * @param sid This function will only include events in the search that come from this source
+ * @param timestampMicros Timestamp for which you search the event that happened prior
+ * @param pond The pond from which the events are taken
+ * @returns Returns the offset of the event which happened prior to the given timestamp.
+ * Returns -1 if no events happened prior to the timestamp.
+ */
+export async function getLastEventOffsetBeforeTimestamp(
+  offsets: OffsetMap,
+  sid: string,
+  timestampMicros: number,
+  pond: Pond,
+): Promise<number> {
+  const relativeTiming = await compareTimestampWithOffsetBounds(offsets, sid, timestampMicros, pond)
+  if (relativeTiming === 'beforeRange') {
+    return -1
+  }
+  const maxOffset = offsets[sid]
+  if (relativeTiming === 'afterRange') {
+    return maxOffset
+  }
+  //inperformant iterative search, will be replaced with binary search
+  for (let currentOffset = 0; currentOffset <= maxOffset; currentOffset++) {
+    const currentEvent = await getActyxEventByOffset(sid, currentOffset, pond)
+    if (currentEvent.meta.timestampMicros >= timestampMicros) {
+      return currentOffset - 1
+    }
+  }
+  return maxOffset
+}
+
+/**
+ * Pure function. The timestamp of the event with the highest offset of the given source (sid) is determined
+ * Then the offsets of all sources in the given offset map are set to offset of the source's
+ * event that happened directly prior to determined timestamp. This function basically calls
+ * getLastEventOffsetBeforeTimestamp for every source and returns the results as an offset map.
+ * @param sid sid of the source which the other sources shall be synced with
+ * @param allEvents Offsets which dictate the range of events that are included
+ * Use currentOffsets() if you wish to include all known events
+ * @param pond The pond from which the events are taken
+ * @returns Offset map with offsets that match the constraints described above
+ */
+export async function syncOffsetMapOnSource(
+  sid: string,
+  offsetOfSid: number,
+  allEvents: OffsetMap,
+  pond: Pond,
+): Promise<OffsetMap> {
+  let lastSelectedEventFromSource
+  let syncTimestamp = 0
+  try {
+    lastSelectedEventFromSource = await getActyxEventByOffset(sid, offsetOfSid, pond)
+    syncTimestamp = lastSelectedEventFromSource.meta.timestampMicros
+  } catch (__error) {}
+  return await syncOffsetMapOnTimestamp(syncTimestamp, allEvents, pond)
+}
+
+/**
+ * Pure function. Sets the offsets of all sources in the given offset map to the offset of the source's
+ * event that happened directly prior to the given timestamp. This function basically calls
+ * getLastEventOffsetBeforeTimestamp for every source and returns the results as an offset map.
+ * @param timestampMicros Timestamp for which you search the events that happened prior
+ * @param offsets Offsets which dictate the range of events that are included
+ * Use currentOffsets() if you wish to include all known events
+ * @param pond The pond from which the events are taken
+ * @returns Offset map with offsets that match the constraints described above
+ */
+export async function syncOffsetMapOnTimestamp(
+  timestampMicros: number,
+  offsets: OffsetMap,
+  pond: Pond,
+): Promise<OffsetMap> {
+  const allOffsets = await Promise.all(
+    Object.entries(offsets).map(async ([sid, __events]) => {
+      try {
+        const lastEventOffsetBeforeTimestamp = await getLastEventOffsetBeforeTimestamp(
+          offsets,
+          sid,
+          timestampMicros + 1,
+          pond,
+        )
+        return {
+          [sid]: lastEventOffsetBeforeTimestamp,
+        }
+      } catch {
+        return {
+          [sid]: 0,
+        }
+      }
+    }),
+  )
+  return allOffsets.reduce((previousValue, currentValue) => {
+    return { ...previousValue, ...currentValue }
+  }, {})
 }
 
 /**

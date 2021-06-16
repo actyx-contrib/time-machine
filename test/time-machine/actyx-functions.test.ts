@@ -148,6 +148,25 @@ describe('reduceTwinStateFromEvents', () => {
   })
 })
 
+describe('syncSelectedEventsOnTimestamp', () => {
+  let testPond: Pond
+  beforeAll(() => {
+    testPond = createAlternatingSourceTestPond(2, 2)
+  })
+  afterAll(() => {
+    testPond.dispose()
+  })
+  it('should give the offset of the event the happened before the given timestamp for each source', async () => {
+    const offsets = await actyxFunc.syncOffsetMapOnTimestamp(
+      BASE_DATE + 2,
+      await testPond.events().currentOffsets(),
+      testPond,
+    )
+    expect(offsets['source_0']).toBe(1)
+    expect(offsets['source_1']).toBe(0)
+  })
+})
+
 function getTestEvents(): ActyxEvent[] {
   const events: ActyxEvent[] = []
   events.push(createTestEvent({ eventType: 'stateOneToTwo' }))

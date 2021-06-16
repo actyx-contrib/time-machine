@@ -1,4 +1,4 @@
-import { Slider, Typography, Grid } from '@material-ui/core'
+import { Slider, Typography, Grid, Checkbox } from '@material-ui/core'
 import React, { useState } from 'react'
 
 type SourceSliderProps = {
@@ -6,7 +6,9 @@ type SourceSliderProps = {
   numberOfSelectedEvents: number
   numberOfAllEvents: number
   disabled: boolean
+  syncSelected: boolean
   onEventsChanged: (events: number) => void
+  onSyncCheckboxChanged: (checked: boolean) => void
 }
 
 export function SourceSlider({
@@ -15,6 +17,8 @@ export function SourceSlider({
   numberOfAllEvents,
   disabled,
   onEventsChanged,
+  onSyncCheckboxChanged,
+  syncSelected,
 }: SourceSliderProps): JSX.Element {
   const [sliderValue, setSliderValue] = useState<number>(numberOfSelectedEvents)
 
@@ -29,7 +33,7 @@ export function SourceSlider({
           {sid} <br />({numberOfSelectedEvents}/{numberOfAllEvents})
         </Typography>
       </Grid>
-      <Grid item xs={10}>
+      <Grid item xs={8}>
         <Slider
           style={{ maxWidth: 350 }}
           value={sliderValue}
@@ -43,6 +47,18 @@ export function SourceSlider({
             onEventsChanged(+value)
           }}
           aria-labelledby="continuous-slider"
+        />
+      </Grid>
+      <Grid>
+        <Typography>Sync</Typography>
+        <Checkbox
+          checked={syncSelected}
+          onChange={(event) => {
+            onSyncCheckboxChanged(event.target.checked)
+          }}
+          disabled={disabled}
+          color="primary"
+          inputProps={{ 'aria-label': 'primary checkbox' }}
         />
       </Grid>
     </Grid>
