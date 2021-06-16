@@ -111,7 +111,7 @@ export async function getActyxEventByOffset(
   })
 
   if (results.length === 0) {
-    throw new Error('Event could not be retrieved')
+    throw new Error(`Event could not be retrieved (offset = ${eventOffset})`)
   }
 
   return results[0]
@@ -143,6 +143,27 @@ export async function getLastEventOffsetBeforeTimestamp(
     return maxOffset
   }
   //inperformant iterative search, will be replaced with binary search
+
+  /*let max = maxOffset
+  let min = 0
+  while (min <= max) {
+    const mid = min + Math.floor(max / 2)
+    const guessedEventTimestamp = (await getActyxEventByOffset(sid, mid, pond)).meta.timestampMicros
+    const guessEventSuccessorTimestamp = (await getActyxEventByOffset(sid, mid + 1, pond)).meta
+      .timestampMicros
+    if (
+      guessedEventTimestamp < timestampMicros &&
+      guessEventSuccessorTimestamp >= timestampMicros
+    ) {
+      return mid
+    } else if (guessedEventTimestamp >= timestampMicros) {
+      max = mid - 1
+    } else {
+      min = mid + 1
+    }
+  }
+  return maxOffset*/
+
   for (let currentOffset = 0; currentOffset <= maxOffset; currentOffset++) {
     const currentEvent = await getActyxEventByOffset(sid, currentOffset, pond)
     if (currentEvent.meta.timestampMicros >= timestampMicros) {
@@ -202,6 +223,7 @@ export async function syncOffsetMapOnTimestamp(
           timestampMicros + 1,
           pond,
         )
+        console.log(lastEventOffsetBeforeTimestamp)
         return {
           [sid]: lastEventOffsetBeforeTimestamp,
         }

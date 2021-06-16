@@ -327,8 +327,10 @@ export function App(): JSX.Element {
         selectedTimeLimitMicros,
         pond,
       )
+
       newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
     }
+    console.log(JSON.stringify(newOffsets))
     setSelectableEvents(newOffsets)
     setCalculatingOffsetLimits(false)
   }
