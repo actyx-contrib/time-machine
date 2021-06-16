@@ -6,19 +6,18 @@ Actyx Time Machine is a graphical tool which aims to help developers troubleshoo
 
 ## Prerequisites
 
-* You need to have access to the TypeScript source files of your twins/fishes.
-* The events you want to apply to the twin/fish must be present on your local instance of ActyxOS. (The ability to connect to external ActyxOS instances is in development)
+- You need to have access to the TypeScript source files of your twins/fishes.
+- The events you want to apply to the twin/fish must be present on your local instance of ActyxOS.
 
 ## Setup
 
-* Clone this repository (verify that you have cloned the desired branch!)
+- Clone this repository (verify that you have cloned the desired branch!)
 
-* Copy any sources you need to create your fishes into the Actyx Time Machine project. You may add additional dependencies if your your fishes require them.
+- Copy any sources you need to create your fishes into the Actyx Time Machine project. You may add additional dependencies if your your fishes require them.
 
-* Execute `npm install` to install all needed dependencies.
+- Execute `npm install` to install all needed dependencies.
 
-* Create a TypeScript file which exports your fishes as a default export like this:
-
+- Create a TypeScript file which exports your fishes as a default export like this:
 
 ```typescript
 import { Fish } from '@actyx/pond'
@@ -29,10 +28,12 @@ export default function (): Fish<any, any>[] {
 }
 ```
 
-* Edit the `package.json` file of the time machine so that the config entry `fishesfile` points towards your newly created file.
+- Edit the `package.json` file of the time machine so that the config entry `fishesfile` points towards your newly created file. You may also edit the entry `pondurl`, if you want to connect to an ActyxOS instance that is not running on your localhost.
+
 ```json
 "config": {
-    "fishesfile": "./your-file.ts"
+    "fishesfile": "./your-file.ts",
+    "pondurl": "ws://localhost:4243/store_api"
   },
 ```
 
@@ -41,5 +42,3 @@ export default function (): Fish<any, any>[] {
 Execute `npm run start`
 
 You should now be able to access the Actyx Time Machine at `http://localhost:1234/`
-
-

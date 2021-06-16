@@ -15,7 +15,9 @@
     "import-fishes": "node import-fishes.js"
   },
   "config": {
-    "fishesfile": "./example-fishes.ts"
+    "fishesfile": "./example-fishes.ts",
+    "pondurl": "ws://localhost:4243/store_api"
+    
   },
   "keywords": [],
   "author": "",
