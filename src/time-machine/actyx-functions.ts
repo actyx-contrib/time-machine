@@ -35,7 +35,8 @@ export function compareTimestampWithTimeRange(
 /**
  * Checks whether a timestamp is inside,
  * before or after a timerange which ranges from the earliest event
- * to the latest event in the pond within the given offsets.
+ * to the latest event in the pond within the given offsets (excluding the start boundary).
+ * In the mathematical sense this determines if 'timestampMicros ∈ (firstEvent, lastEvent]'
  * @param offsets Offsets which dictate the range of events that are included
  * Use currentOffsets() if you wish to include all known events
  * @param sid This function will only include events that were emitted by this source
@@ -54,7 +55,7 @@ export async function compareTimestampWithOffsetBounds(
     const latestEvent = await getLatestActyxEventBySid(offsets, sid, pond)
     return compareTimestampWithTimeRange(
       timestampMicros,
-      earliestEvent.meta.timestampMicros,
+      earliestEvent.meta.timestampMicros + 1,
       latestEvent.meta.timestampMicros,
     )
   } catch {
@@ -142,12 +143,13 @@ export async function getLastEventOffsetBeforeTimestamp(
   if (relativeTiming === 'afterRange') {
     return maxOffset
   }
-  //inperformant iterative search, will be replaced with binary search
 
-  /*let max = maxOffset
+  //using binary search to find the event that occurred directly prior to timestamp
+
+  let max = maxOffset
   let min = 0
   while (min <= max) {
-    const mid = min + Math.floor(max / 2)
+    const mid = min + Math.floor((max - min) / 2)
     const guessedEventTimestamp = (await getActyxEventByOffset(sid, mid, pond)).meta.timestampMicros
     const guessEventSuccessorTimestamp = (await getActyxEventByOffset(sid, mid + 1, pond)).meta
       .timestampMicros
@@ -160,14 +162,6 @@ export async function getLastEventOffsetBeforeTimestamp(
       max = mid - 1
     } else {
       min = mid + 1
-    }
-  }
-  return maxOffset*/
-
-  for (let currentOffset = 0; currentOffset <= maxOffset; currentOffset++) {
-    const currentEvent = await getActyxEventByOffset(sid, currentOffset, pond)
-    if (currentEvent.meta.timestampMicros >= timestampMicros) {
-      return currentOffset - 1
     }
   }
   return maxOffset
@@ -223,7 +217,6 @@ export async function syncOffsetMapOnTimestamp(
           timestampMicros + 1,
           pond,
         )
-        console.log(lastEventOffsetBeforeTimestamp)
         return {
           [sid]: lastEventOffsetBeforeTimestamp,
         }

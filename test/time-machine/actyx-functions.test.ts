@@ -78,7 +78,7 @@ describe('ActyxEventGetters should', () => {
   })
 })
 
-describe('getLastOffsetBeforeTimestamp()', () => {
+describe('getLastOffsetBeforeTimestamp() with singleSourceTestPond', () => {
   let singleSourceTestPond: Pond
   let alternatingSourceTestPond: Pond
   let currentSingleSourceOffsets: OffsetMap
@@ -143,13 +143,13 @@ describe('getLastOffsetBeforeTimestamp()', () => {
 
   it('should return the offset of the last event for timestamp after last event in alternating-source pond', async () => {
     for (let i = 0; i < 3; i++) {
-      const timestampAfterLastEvent = BASE_DATE + numberOfAlternatingSourceEvents + 1
+      const timestampAfterAllEvents = BASE_DATE + numberOfAlternatingSources + 1
       const offsetOfLastEvent = 0
       expect(
         await actyxFunc.getLastEventOffsetBeforeTimestamp(
           currentAlternatingSourceOffsets,
           `source_${i}`,
-          timestampAfterLastEvent,
+          timestampAfterAllEvents,
           alternatingSourceTestPond,
         ),
       ).toBe(offsetOfLastEvent)
@@ -212,16 +212,15 @@ function createAlternatingSourceTestPond(
   let globalEventCount = 0
   for (let i = 0; i < numberOfEventsPerSource; i++) {
     for (let j = 0; j < numberOfSources; j++) {
-      testPond.directlyPushEvents([
-        {
-          psn: i,
-          sourceId: `source_${j}`,
-          timestamp: BASE_DATE + globalEventCount,
-          lamport: globalEventCount,
-          tags: ['mock_tag'],
-          payload: i,
-        },
-      ])
+      const event = {
+        psn: i,
+        sourceId: `source_${j}`,
+        timestamp: BASE_DATE + globalEventCount,
+        lamport: globalEventCount,
+        tags: ['mock_tag'],
+        payload: i,
+      }
+      testPond.directlyPushEvents([event])
       globalEventCount++
     }
   }
