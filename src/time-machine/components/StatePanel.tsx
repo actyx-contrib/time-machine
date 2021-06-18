@@ -16,7 +16,7 @@ export function StatePanel({ currentState, previousState }: StatePanelProps): JS
       <Card>
         <CardContent>
           <DiffEditor
-            height="35vh"
+            height="45vh"
             options={{ readOnly: true }}
             original={JSON.stringify(previousState)}
             modified={JSON.stringify(currentState)}

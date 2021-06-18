@@ -244,20 +244,26 @@ export function querySelectedEventsChunked(
 }
 
 /**
- * Calculates a twin-state by reducing the given array of events onto an initial state.
+ * Calculates a twin-state and the predecessor to the final twin-state by reducing the given array of events onto an initial state.
  * @param events The array of events to be applied to the twin.
  * @param onEventFn The on-event-function of the twin.
- * @param initState Initial state of the twin.
- * @returns The state of the twin after applying all events.
+ * @param initialState Initial state of the twin.
+ * @returns The state of the twin after applying all events and the predecessor to this state.
  */
 export function reduceTwinStateFromEvents(
   events: ActyxEvent<unknown>[],
   onEventFn: (state: any, event: any, meta: any) => any,
-  initState: any,
-): any {
-  return events.reduce((state, { payload, meta }) => {
-    return onEventFn(state, payload, meta)
-  }, initState)
+  initialState: any,
+): { previousState: any; currentState: any } {
+  return events.reduce(
+    (state, { payload, meta }) => {
+      return {
+        previousState: state.currentState,
+        currentState: onEventFn(state.currentState, payload, meta),
+      }
+    },
+    { previousState: {}, currentState: initialState },
+  )
 }
 
 /**

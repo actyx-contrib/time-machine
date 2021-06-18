@@ -107,7 +107,7 @@ export function App(): JSX.Element {
   //Reapply events on fishes after change of selected events
   React.useEffect(() => {
     if (selectedEvents) {
-      updateFishStateAndRecentEvent()
+      updateFishStatesAndRecentEvent()
     }
   }, [selectedEvents, selectedTags])
 
@@ -288,25 +288,25 @@ export function App(): JSX.Element {
 
   /**
    * Calculates a new state for the currently selected fish by reducing the state from the selected events.
+   * Both the last and the second last calculated status are returned.
    * The events are queried from ActyxOS.
    * The last event that is applied while calculating the new state is set as the new displayed most recent event.
    */
-  async function updateFishStateAndRecentEvent() {
+  async function updateFishStatesAndRecentEvent() {
     setCalculatingFishState(true)
-    let previousFishState = {}
-    let currentFishState = importedFishes[selectedFishIndex].initialState
+    const initialState = importedFishes[selectedFishIndex].initialState
+    let fishStates = { previousState: {}, currentState: initialState }
     let lastAppliedEvent = {}
     await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
-      previousFishState = currentFishState
-      currentFishState = reduceTwinStateFromEvents(
+      fishStates = reduceTwinStateFromEvents(
         events,
         importedFishes[selectedFishIndex].onEvent,
-        currentFishState,
+        fishStates.currentState,
       )
       lastAppliedEvent = events[events.length - 1]
     })
-    setPreviousFishState(previousFishState)
-    setCurrentFishState(currentFishState)
+    setPreviousFishState(fishStates.previousState)
+    setCurrentFishState(fishStates.currentState)
     setRecentEvent(lastAppliedEvent)
     setCalculatingFishState(false)
   }
