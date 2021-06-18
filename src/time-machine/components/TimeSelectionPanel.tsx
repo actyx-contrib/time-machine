@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Grid, Typography, Slider, CircularProgress } from '@material-ui/core'
+import { Grid, Slider, CircularProgress } from '@material-ui/core'
 import DateFnsUtils from '@date-io/date-fns'
 import { MuiPickersUtilsProvider, KeyboardDateTimePicker } from '@material-ui/pickers'
 
@@ -25,10 +25,7 @@ export function TimeSelectionPanel({
 
   return (
     <div>
-      <Grid item xs={2}>
-        <Typography>Event Time Limit:</Typography>
-      </Grid>
-      <Grid item xs={10}>
+      <Grid item xs={12}>
         <Slider
           style={{ maxWidth: 350 }}
           value={timeSliderValueMicros}

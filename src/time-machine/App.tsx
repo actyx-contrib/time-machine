@@ -12,7 +12,6 @@ import {
   Divider,
 } from '@material-ui/core'
 import fishes from './fishes'
-import ReactJson from 'react-json-view'
 import {
   upsertOffsetMapValue,
   getLastEventOffsetBeforeTimestamp,
@@ -25,11 +24,14 @@ import {
 import { SourceSlider } from './components/SourceSlider'
 import { StatePanel } from './components/StatePanel'
 import { EventPanel } from './components/EventPanel'
-import { OnEventFunctionPanel } from './components/OnEventFunctionPanel'
 import { TimeSelectionPanel } from './components/TimeSelectionPanel'
 import { TagsAlert } from './components/TagsAlert'
 
 const ACTYX_REFRESH_INTERVAL = 10000
+
+const sm_size = 12
+const md_size = 6
+const lg_size = 3
 
 /**
  *
@@ -140,20 +142,18 @@ export function App(): JSX.Element {
       </div>
       <br />
 
-      <Grid container spacing={5}>
-        <Grid container spacing={4} item md={6} xs={12}>
+      <Grid container spacing={4}>
+        <Grid container spacing={4} xs={12}>
           <Grid item xs={12}>
             <Typography variant="h3" component="h3" className="section-header" gutterBottom>
               Settings:
             </Typography>
           </Grid>
           <Grid item container xs={12} spacing={4} style={{ paddingLeft: 50, paddingRight: 0 }}>
-            <Grid item xs={12}>
+            <Grid item sm={sm_size} md={md_size} xl={lg_size}>
               <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
                 Select fish:
               </Typography>
-            </Grid>
-            <Grid item xs={12}>
               <FormControl>
                 <InputLabel>Select from imported fishes</InputLabel>
                 <Select
@@ -172,35 +172,26 @@ export function App(): JSX.Element {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-                Fish properties
-              </Typography>
+            <Grid item container sm={sm_size} md={md_size} xl={lg_size}>
+              <Grid item xs={12}>
+                <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+                  Fish properties:
+                </Typography>
+              </Grid>
+              <Grid item xs={2}>
+                <Typography>Tags:</Typography>
+              </Grid>
+              <Grid item xs={10}>
+                <TextField
+                  error={!(earliestEventMicros && latestEventMicros)}
+                  value={selectedTags}
+                  type="text"
+                  fullWidth={true}
+                  onChange={({ target }) => setSelectedTags(target.value)}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={2}>
-              <Typography>Tags:</Typography>
-            </Grid>
-            <Grid item xs={10}>
-              <TextField
-                error={!(earliestEventMicros && latestEventMicros)}
-                value={selectedTags}
-                type="text"
-                fullWidth={true}
-                onChange={({ target }) => setSelectedTags(target.value)}
-              />
-            </Grid>
-            <Grid item xs={2}>
-              <Typography>Initial State:</Typography>
-            </Grid>
-            <Grid item xs={10}>
-              <ReactJson src={importedFishes[selectedFishIndex].initialState} />
-            </Grid>
-            <Grid item xs={12}>
-              <OnEventFunctionPanel
-                functionCode={importedFishes[selectedFishIndex].onEvent.toString()}
-              />
-            </Grid>
-            <Grid item xs={12}>
+            <Grid item sm={sm_size} md={md_size} xl={lg_size}>
               <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
                 Select time limit:
               </Typography>
@@ -218,64 +209,71 @@ export function App(): JSX.Element {
                 <TagsAlert tagsStatus={'noMatchingEvents'} />
               )}
             </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-                Select events from your ActyxOS nodes:
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              {earliestEventMicros && latestEventMicros ? (
-                <div>
-                  {Object.entries(selectableEvents).map(([sid, events]) => {
-                    const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && checkboxLock
-                    const disabledByLoadingLock = calculatingFishState || calculatingOffsetLimits
-                    const disabled = disabledByLoadingLock || disabledBySyncLock
-                    return (
-                      <SourceSlider
-                        sid={sid}
-                        numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
-                        numberOfAllEvents={events + 1}
-                        syncSelected={selectedSyncCheckboxesMap[sid] || false}
-                        onEventsChanged={(events) => {
-                          if (selectedSyncCheckboxesMap[sid]) {
-                            syncOffsetMapOnSource(sid, events - 1, selectableEvents, pond).then(
-                              setSelectedEvents,
-                            )
-                          } else {
-                            setSelectedEvents(upsertOffsetMapValue(selectedEvents, sid, events - 1))
-                          }
-                        }}
-                        onSyncCheckboxChanged={(checked) => {
-                          setSelectedSyncCheckbox({ ...selectedSyncCheckboxesMap, [sid]: checked })
-                          setCheckboxLock(checked)
-                          if (checked) {
-                            syncOffsetMapOnSource(
-                              sid,
-                              selectedEvents[sid],
-                              selectableEvents,
-                              pond,
-                            ).then(setSelectedEvents)
-                          }
-                        }}
-                        disabled={disabled}
-                        key={sid}
-                      />
-                    )
-                  })}
-                </div>
-              ) : (
-                <TagsAlert tagsStatus={'noMatchingEvents'} />
-              )}
+            <Grid item container sm={sm_size} md={md_size} xl={lg_size}>
+              <Grid item xs={12}>
+                <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+                  Select events from your ActyxOS nodes:
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                {earliestEventMicros && latestEventMicros ? (
+                  <div>
+                    {Object.entries(selectableEvents).map(([sid, events]) => {
+                      const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && checkboxLock
+                      const disabledByLoadingLock = calculatingFishState || calculatingOffsetLimits
+                      const disabled = disabledByLoadingLock || disabledBySyncLock
+                      return (
+                        <SourceSlider
+                          sid={sid}
+                          numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
+                          numberOfAllEvents={events + 1}
+                          syncSelected={selectedSyncCheckboxesMap[sid] || false}
+                          onEventsChanged={(events) => {
+                            if (selectedSyncCheckboxesMap[sid]) {
+                              syncOffsetMapOnSource(sid, events - 1, selectableEvents, pond).then(
+                                setSelectedEvents,
+                              )
+                            } else {
+                              setSelectedEvents(
+                                upsertOffsetMapValue(selectedEvents, sid, events - 1),
+                              )
+                            }
+                          }}
+                          onSyncCheckboxChanged={(checked) => {
+                            setSelectedSyncCheckbox({
+                              ...selectedSyncCheckboxesMap,
+                              [sid]: checked,
+                            })
+                            setCheckboxLock(checked)
+                            if (checked) {
+                              syncOffsetMapOnSource(
+                                sid,
+                                selectedEvents[sid],
+                                selectableEvents,
+                                pond,
+                              ).then(setSelectedEvents)
+                            }
+                          }}
+                          disabled={disabled}
+                          key={sid}
+                        />
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <TagsAlert tagsStatus={'noMatchingEvents'} />
+                )}
+              </Grid>
             </Grid>
           </Grid>
         </Grid>
         <Grid item>
           <Divider orientation="vertical" variant="fullWidth" />
         </Grid>
-        <Grid item container md={6} xs={12} spacing={2}>
+        <Grid item container md={12} xs={12} spacing={2}>
           <Grid item xs={12}>
             <Typography variant="h3" component="h3" className="section-header" gutterBottom>
-              Result:
+              Results:
             </Typography>
           </Grid>
           <Grid item container xs={12} spacing={4} style={{ paddingLeft: 50, paddingRight: 0 }}>
