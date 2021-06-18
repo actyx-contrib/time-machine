@@ -9,7 +9,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Divider,
 } from '@material-ui/core'
 import fishes from './fishes'
 import {
@@ -32,7 +31,7 @@ const ACTYX_REFRESH_INTERVAL = 10000
 const sm_size = 12
 const md_size = 6
 const lg_size = 3
-
+const paddingStyle = { paddingLeft: 30, paddingRight: 0 }
 /**
  *
  * @returns Main component of the Actyx Time Machine
@@ -62,7 +61,8 @@ export function App(): JSX.Element {
   const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
 
   const [recentEvent, setRecentEvent] = useState<{ [p: string]: unknown }>({})
-  const [fishState, setFishState] = useState({})
+  const [currentFishState, setCurrentFishState] = useState({})
+  const [previousFishState, setPreviousFishState] = useState({})
 
   //Look for new event offsets every x nanoseconds
   React.useEffect(() => {
@@ -142,14 +142,14 @@ export function App(): JSX.Element {
       </div>
       <br />
 
-      <Grid container spacing={4}>
-        <Grid container spacing={4} xs={12}>
+      <Grid container spacing={6}>
+        <Grid container item spacing={4} xs={12}>
           <Grid item xs={12}>
             <Typography variant="h3" component="h3" className="section-header" gutterBottom>
               Settings:
             </Typography>
           </Grid>
-          <Grid item container xs={12} spacing={4} style={{ paddingLeft: 50, paddingRight: 0 }}>
+          <Grid item container xs={12} spacing={4} style={paddingStyle}>
             <Grid item sm={sm_size} md={md_size} xl={lg_size}>
               <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
                 Select fish:
@@ -267,21 +267,18 @@ export function App(): JSX.Element {
             </Grid>
           </Grid>
         </Grid>
-        <Grid item>
-          <Divider orientation="vertical" variant="fullWidth" />
-        </Grid>
-        <Grid item container md={12} xs={12} spacing={2}>
+        <Grid item container md={12} xs={12} spacing={4}>
           <Grid item xs={12}>
             <Typography variant="h3" component="h3" className="section-header" gutterBottom>
               Results:
             </Typography>
           </Grid>
-          <Grid item container xs={12} spacing={4} style={{ paddingLeft: 50, paddingRight: 0 }}>
-            <Grid item xs={12}>
-              <StatePanel state={fishState} />
-            </Grid>
-            <Grid item xs={12}>
+          <Grid item container xs={12} style={paddingStyle} spacing={4}>
+            <Grid item xs={12} md={4}>
               <EventPanel event={recentEvent} />
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <StatePanel currentState={currentFishState} previousState={previousFishState} />
             </Grid>
           </Grid>
         </Grid>
@@ -296,17 +293,20 @@ export function App(): JSX.Element {
    */
   async function updateFishStateAndRecentEvent() {
     setCalculatingFishState(true)
-    let twinState = importedFishes[selectedFishIndex].initialState
+    let previousFishState = {}
+    let currentFishState = importedFishes[selectedFishIndex].initialState
     let lastAppliedEvent = {}
     await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
-      twinState = reduceTwinStateFromEvents(
+      previousFishState = currentFishState
+      currentFishState = reduceTwinStateFromEvents(
         events,
         importedFishes[selectedFishIndex].onEvent,
-        twinState,
+        currentFishState,
       )
       lastAppliedEvent = events[events.length - 1]
     })
-    setFishState(twinState)
+    setPreviousFishState(previousFishState)
+    setCurrentFishState(currentFishState)
     setRecentEvent(lastAppliedEvent)
     setCalculatingFishState(false)
   }
