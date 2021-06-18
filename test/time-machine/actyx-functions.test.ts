@@ -144,7 +144,10 @@ describe('reduceTwinStateFromEvents', () => {
       testFish.onEvent,
       testFish.initialState,
     )
-    expect(twinState).toEqual({ status: 'three' })
+    expect(twinState).toEqual({
+      previousState: { status: 'two' },
+      currentState: { status: 'three' },
+    })
   })
 })
 

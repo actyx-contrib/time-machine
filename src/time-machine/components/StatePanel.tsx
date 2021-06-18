@@ -1,12 +1,13 @@
 import { Card, CardContent, Typography } from '@material-ui/core'
+import { DiffEditor } from '@monaco-editor/react'
 import React from 'react'
-import ReactJson from 'react-json-view'
 
 type StatePanelProps = {
-  state: { [p: string]: unknown }
+  currentState: { [p: string]: unknown }
+  previousState: { [p: string]: unknown }
 }
 
-export function StatePanel({ state }: StatePanelProps): JSX.Element {
+export function StatePanel({ currentState, previousState }: StatePanelProps): JSX.Element {
   return (
     <div>
       <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
@@ -14,8 +15,13 @@ export function StatePanel({ state }: StatePanelProps): JSX.Element {
       </Typography>
       <Card>
         <CardContent>
-          <br />
-          <ReactJson src={state} />
+          <DiffEditor
+            height="45vh"
+            options={{ readOnly: true }}
+            original={JSON.stringify(previousState, null, 2)}
+            modified={JSON.stringify(currentState, null, 2)}
+            language="JSON"
+          />
         </CardContent>
       </Card>
     </div>
