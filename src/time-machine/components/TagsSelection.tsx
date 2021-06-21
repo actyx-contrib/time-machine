@@ -2,12 +2,18 @@ import { Button, Grid, TextField } from '@material-ui/core'
 import React, { useState } from 'react'
 
 type TagsSelectionProps = {
+  disabled: boolean
   error: boolean
   selectedTags: string
   onChange: (tags: string) => void
 }
 
-export function TagsSelection({ error, selectedTags, onChange }: TagsSelectionProps): JSX.Element {
+export function TagsSelection({
+  disabled,
+  error,
+  selectedTags,
+  onChange,
+}: TagsSelectionProps): JSX.Element {
   const [tagsTextfieldValue, setTagsTextfieldValue] = useState<string>(selectedTags)
 
   React.useEffect(() => {
@@ -18,6 +24,7 @@ export function TagsSelection({ error, selectedTags, onChange }: TagsSelectionPr
     <Grid item spacing={2} container>
       <Grid item xs={7}>
         <TextField
+          disabled={disabled}
           error={error}
           value={tagsTextfieldValue}
           type="text"
@@ -29,6 +36,7 @@ export function TagsSelection({ error, selectedTags, onChange }: TagsSelectionPr
       </Grid>
       <Grid item xs={1}>
         <Button
+          disabled={disabled}
           variant="contained"
           color="primary"
           size="small"

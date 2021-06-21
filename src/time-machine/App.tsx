@@ -151,6 +151,7 @@ export function App(): JSX.Element {
               <FormControl>
                 <InputLabel>Select from imported fishes</InputLabel>
                 <Select
+                  disabled={isCalculating()}
                   value={selectedFishIndex}
                   onChange={(event) => {
                     setSelectedFishIndex(event.target.value as number)
@@ -177,6 +178,7 @@ export function App(): JSX.Element {
               </Grid>
               <Grid item xs={10}>
                 <TagsSelection
+                  disabled={isCalculating()}
                   error={!(earliestEventMicros && latestEventMicros)}
                   selectedTags={selectedTags}
                   onChange={setSelectedTags}
@@ -192,7 +194,7 @@ export function App(): JSX.Element {
                   selectedTimeLimitMicros={selectedTimeLimitMicros}
                   earliestEventMicros={earliestEventMicros}
                   latestEventMicros={latestEventMicros}
-                  disabled={calculatingOffsetLimits}
+                  disabled={isCalculating()}
                   onTimeChange={(time) => {
                     setSelectedTimeLimitMicros(time)
                   }}
@@ -212,8 +214,7 @@ export function App(): JSX.Element {
                   <div>
                     {Object.entries(selectableEvents).map(([sid, events]) => {
                       const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && checkboxLock
-                      const disabledByCalculatingLock =
-                        calculatingFishState || calculatingOffsetLimits || calculatingSync
+                      const disabledByCalculatingLock = isCalculating()
                       const disabled = disabledByCalculatingLock || disabledBySyncLock
                       return (
                         <SourceSlider
@@ -341,5 +342,9 @@ export function App(): JSX.Element {
       }
     }
     setSelectedEvents(newOffsets)
+  }
+
+  function isCalculating(): boolean {
+    return calculatingFishState || calculatingOffsetLimits || calculatingSync
   }
 }
