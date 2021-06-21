@@ -59,6 +59,7 @@ export function App(): JSX.Element {
 
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
   const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
+  const [calculatingSync, setCalculatingSync] = React.useState<boolean>(false)
 
   const [recentEvent, setRecentEvent] = useState<{ [p: string]: unknown }>({})
   const [currentFishState, setCurrentFishState] = useState({})
@@ -220,8 +221,9 @@ export function App(): JSX.Element {
                   <div>
                     {Object.entries(selectableEvents).map(([sid, events]) => {
                       const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && checkboxLock
-                      const disabledByLoadingLock = calculatingFishState || calculatingOffsetLimits
-                      const disabled = disabledByLoadingLock || disabledBySyncLock
+                      const disabledByCalculatingLock =
+                        calculatingFishState || calculatingOffsetLimits || calculatingSync
+                      const disabled = disabledByCalculatingLock || disabledBySyncLock
                       return (
                         <SourceSlider
                           sid={sid}
@@ -230,8 +232,12 @@ export function App(): JSX.Element {
                           syncSelected={selectedSyncCheckboxesMap[sid] || false}
                           onEventsChanged={(events) => {
                             if (selectedSyncCheckboxesMap[sid]) {
+                              setCalculatingSync(true)
                               syncOffsetMapOnSource(sid, events - 1, selectableEvents, pond).then(
-                                setSelectedEvents,
+                                (value) => {
+                                  setSelectedEvents(value)
+                                  setCalculatingSync(false)
+                                },
                               )
                             } else {
                               setSelectedEvents(
