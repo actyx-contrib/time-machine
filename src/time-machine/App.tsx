@@ -1,15 +1,7 @@
 import React, { useState } from 'react'
 import { Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
-import {
-  Typography,
-  TextField,
-  Grid,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-} from '@material-ui/core'
+import { Typography, Grid, FormControl, InputLabel, MenuItem, Select } from '@material-ui/core'
 import fishes from './fishes'
 import {
   upsertOffsetMapValue,
@@ -25,6 +17,7 @@ import { StatePanel } from './components/StatePanel'
 import { EventPanel } from './components/EventPanel'
 import { TimeSelectionPanel } from './components/TimeSelectionPanel'
 import { TagsAlert } from './components/TagsAlert'
+import { TagsSelection } from './components/TagsSelection'
 
 const ACTYX_REFRESH_INTERVAL = 10000
 
@@ -183,12 +176,10 @@ export function App(): JSX.Element {
                 <Typography>Tags:</Typography>
               </Grid>
               <Grid item xs={10}>
-                <TextField
+                <TagsSelection
                   error={!(earliestEventMicros && latestEventMicros)}
-                  value={selectedTags}
-                  type="text"
-                  fullWidth={true}
-                  onChange={({ target }) => setSelectedTags(target.value)}
+                  selectedTags={selectedTags}
+                  onChange={setSelectedTags}
                 />
               </Grid>
             </Grid>
