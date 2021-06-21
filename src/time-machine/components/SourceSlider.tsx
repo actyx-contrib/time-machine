@@ -1,4 +1,5 @@
-import { Slider, Typography, Grid, Checkbox } from '@material-ui/core'
+import { Slider, Typography, Grid, Checkbox, IconButton } from '@material-ui/core'
+import { ArrowBack, ArrowForward } from '@material-ui/icons'
 import React, { useState } from 'react'
 
 type SourceSliderProps = {
@@ -33,7 +34,7 @@ export function SourceSlider({
           {sid} <br />({numberOfSelectedEvents}/{numberOfAllEvents})
         </Typography>
       </Grid>
-      <Grid item xs={8}>
+      <Grid item xs={5}>
         <Slider
           style={{ maxWidth: 350 }}
           value={sliderValue}
@@ -49,18 +50,53 @@ export function SourceSlider({
           aria-labelledby="continuous-slider"
         />
       </Grid>
-      <Grid>
-        <Typography>Sync</Typography>
-        <Checkbox
-          checked={syncSelected}
-          onChange={(event) => {
-            onSyncCheckboxChanged(event.target.checked)
-          }}
+
+      <Grid item xs={1}>
+        <IconButton
           disabled={disabled}
-          color="primary"
-          inputProps={{ 'aria-label': 'primary checkbox' }}
-        />
+          onClick={() => {
+            onEventButtonPressed('decrease')
+          }}
+        >
+          <ArrowBack color={disabled ? undefined : 'primary'} />
+        </IconButton>
+      </Grid>
+      <Grid item xs={1}>
+        <IconButton
+          disabled={disabled}
+          onClick={() => {
+            onEventButtonPressed('increase')
+          }}
+        >
+          <ArrowForward color={disabled ? undefined : 'primary'} />
+        </IconButton>
+      </Grid>
+      <Grid item container xs={1}>
+        <Grid item xs={6}>
+          <Typography>Sync</Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Checkbox
+            checked={syncSelected}
+            onChange={(event) => {
+              onSyncCheckboxChanged(event.target.checked)
+            }}
+            disabled={disabled}
+            color="primary"
+            inputProps={{ 'aria-label': 'primary checkbox' }}
+          />
+        </Grid>
       </Grid>
     </Grid>
   )
+
+  type ButtonType = 'increase' | 'decrease'
+
+  function onEventButtonPressed(buttonType: ButtonType): void {
+    const newNumberOfSelectedEvents =
+      buttonType === 'increase' ? numberOfSelectedEvents + 1 : numberOfSelectedEvents - 1
+    if (newNumberOfSelectedEvents >= 0 && newNumberOfSelectedEvents <= numberOfAllEvents) {
+      onEventsChanged(newNumberOfSelectedEvents)
+    }
+  }
 }

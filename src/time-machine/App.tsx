@@ -1,15 +1,7 @@
 import React, { useState } from 'react'
 import { Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
-import {
-  Typography,
-  TextField,
-  Grid,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-} from '@material-ui/core'
+import { Typography, Grid, FormControl, InputLabel, MenuItem, Select } from '@material-ui/core'
 import fishes from './fishes'
 import {
   upsertOffsetMapValue,
@@ -25,6 +17,7 @@ import { StatePanel } from './components/StatePanel'
 import { EventPanel } from './components/EventPanel'
 import { TimeSelectionPanel } from './components/TimeSelectionPanel'
 import { TagsAlert } from './components/TagsAlert'
+import { TagsSelection } from './components/TagsSelection'
 
 const ACTYX_REFRESH_INTERVAL = 10000
 
@@ -59,6 +52,7 @@ export function App(): JSX.Element {
 
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
   const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
+  const [calculatingSync, setCalculatingSync] = React.useState<boolean>(false)
 
   const [recentEvent, setRecentEvent] = useState<{ [p: string]: unknown }>({})
   const [currentFishState, setCurrentFishState] = useState({})
@@ -157,6 +151,7 @@ export function App(): JSX.Element {
               <FormControl>
                 <InputLabel>Select from imported fishes</InputLabel>
                 <Select
+                  disabled={isCalculating()}
                   value={selectedFishIndex}
                   onChange={(event) => {
                     setSelectedFishIndex(event.target.value as number)
@@ -182,12 +177,11 @@ export function App(): JSX.Element {
                 <Typography>Tags:</Typography>
               </Grid>
               <Grid item xs={10}>
-                <TextField
+                <TagsSelection
+                  disabled={isCalculating()}
                   error={!(earliestEventMicros && latestEventMicros)}
-                  value={selectedTags}
-                  type="text"
-                  fullWidth={true}
-                  onChange={({ target }) => setSelectedTags(target.value)}
+                  selectedTags={selectedTags}
+                  onChange={setSelectedTags}
                 />
               </Grid>
             </Grid>
@@ -200,7 +194,7 @@ export function App(): JSX.Element {
                   selectedTimeLimitMicros={selectedTimeLimitMicros}
                   earliestEventMicros={earliestEventMicros}
                   latestEventMicros={latestEventMicros}
-                  disabled={calculatingOffsetLimits}
+                  disabled={isCalculating()}
                   onTimeChange={(time) => {
                     setSelectedTimeLimitMicros(time)
                   }}
@@ -220,8 +214,8 @@ export function App(): JSX.Element {
                   <div>
                     {Object.entries(selectableEvents).map(([sid, events]) => {
                       const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && checkboxLock
-                      const disabledByLoadingLock = calculatingFishState || calculatingOffsetLimits
-                      const disabled = disabledByLoadingLock || disabledBySyncLock
+                      const disabledByCalculatingLock = isCalculating()
+                      const disabled = disabledByCalculatingLock || disabledBySyncLock
                       return (
                         <SourceSlider
                           sid={sid}
@@ -230,8 +224,12 @@ export function App(): JSX.Element {
                           syncSelected={selectedSyncCheckboxesMap[sid] || false}
                           onEventsChanged={(events) => {
                             if (selectedSyncCheckboxesMap[sid]) {
+                              setCalculatingSync(true)
                               syncOffsetMapOnSource(sid, events - 1, selectableEvents, pond).then(
-                                setSelectedEvents,
+                                (value) => {
+                                  setSelectedEvents(value)
+                                  setCalculatingSync(false)
+                                },
                               )
                             } else {
                               setSelectedEvents(
@@ -344,5 +342,9 @@ export function App(): JSX.Element {
       }
     }
     setSelectedEvents(newOffsets)
+  }
+
+  function isCalculating(): boolean {
+    return calculatingFishState || calculatingOffsetLimits || calculatingSync
   }
 }

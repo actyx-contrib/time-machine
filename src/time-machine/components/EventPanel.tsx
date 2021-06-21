@@ -12,7 +12,7 @@ export function EventPanel({ event }: EventPanelProps): JSX.Element {
       <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
         Last applied event:
       </Typography>
-      <Card>
+      <Card style={{ maxHeight: '50vh', overflow: 'auto' }}>
         <CardContent>
           <ReactJson src={event} />
         </CardContent>
