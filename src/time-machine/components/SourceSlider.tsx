@@ -37,26 +37,33 @@ export function SourceSlider({
 
   return (
     <Grid key={sid} container spacing={1}>
-      <Grid item xs={2}>
-        <Typography>
-          {sid} <br />({sliderValue}/{numberOfAllEvents})
-        </Typography>
-      </Grid>
-      <Grid item xs={5}>
-        <Slider
-          style={{ maxWidth: 350 }}
-          value={sliderValue}
-          min={0}
-          max={numberOfAllEvents}
-          disabled={disabled}
-          onChange={(_event, value) => {
-            setSliderValue(+value)
-          }}
-          onChangeCommitted={(_event, value) => {
-            onEventsChanged(+value)
-          }}
-          aria-labelledby="continuous-slider"
-        />
+      <Grid item xs={9}>
+        <FormControl fullWidth>
+          <FormControlLabel
+            labelPlacement="start"
+            control={
+              <Slider
+                style={{ maxWidth: 350 }}
+                value={sliderValue}
+                min={0}
+                max={numberOfAllEvents}
+                disabled={disabled}
+                onChange={(_event, value) => {
+                  setSliderValue(+value)
+                }}
+                onChangeCommitted={(_event, value) => {
+                  onEventsChanged(+value)
+                }}
+                aria-labelledby="continuous-slider"
+              />
+            }
+            label={
+              <Typography>
+                {sid} <br />({sliderValue}/{numberOfAllEvents})
+              </Typography>
+            }
+          />
+        </FormControl>
       </Grid>
 
       <Grid item xs={1}>

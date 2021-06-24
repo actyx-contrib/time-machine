@@ -93,7 +93,7 @@ export function TimeSelectionPanel({
                 color="primary"
               />
             }
-            label={<Typography>Select all events</Typography>}
+            label={<Typography>Select all events (no time limit)</Typography>}
           />
         </FormControl>
       </Grid>
