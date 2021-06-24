@@ -15,7 +15,7 @@ type TimeSelectionPanelProps = {
   earliestEventMicros: number
   latestEventMicros: number
   allEventsSelected: boolean
-  onAllEventsSelectedChanged: (value: boolean) => void
+  onSelectAllEventsCheckedChanged: (value: boolean) => void
   disabled: boolean
   onTimeChange: (time: number) => void
 }
@@ -25,7 +25,7 @@ export function TimeSelectionPanel({
   earliestEventMicros,
   latestEventMicros,
   allEventsSelected,
-  onAllEventsSelectedChanged,
+  onSelectAllEventsCheckedChanged,
   disabled,
   onTimeChange,
 }: TimeSelectionPanelProps): JSX.Element {
@@ -43,7 +43,7 @@ export function TimeSelectionPanel({
               <Checkbox
                 checked={allEventsSelected}
                 onChange={(event) => {
-                  onAllEventsSelectedChanged(event.target.checked)
+                  onSelectAllEventsCheckedChanged(event.target.checked)
                 }}
                 disabled={disabled}
                 color="primary"

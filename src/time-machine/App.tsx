@@ -134,11 +134,13 @@ export function App(): JSX.Element {
     if (!allEvents) return
 
     updateSelectableEvents()
-  }, [selectedTimeLimitMicros, selectAllEventsChecked])
+  }, [selectedTimeLimitMicros, selectAllEventsChecked, allEvents])
 
   React.useEffect(() => {
     if (!allEvents) return
-    setSelectedEvents(allEvents)
+    if (keepUpWithNewEventsChecked) {
+      setSelectedEvents(allEvents)
+    }
   }, [allEvents, keepUpWithNewEventsChecked])
 
   //Update selected events when max selectable events changes
@@ -153,12 +155,12 @@ export function App(): JSX.Element {
   return (
     <div>
       <Grid container>
-        <Grid item xs={6}>
+        <Grid item xs={8}>
           <Typography variant="h2" component="h2" gutterBottom>
             Actyx Time Machine
           </Typography>
         </Grid>
-        <Grid item xs={6}>
+        <Grid item xs={4}>
           {isCalculating() ? (
             <Grid item>
               <CircularProgress style={{ paddingTop: '20px' }} />
@@ -231,7 +233,12 @@ export function App(): JSX.Element {
                   latestEventMicros={latestEventMicros}
                   disabled={isCalculating()}
                   allEventsSelected={selectAllEventsChecked}
-                  onAllEventsSelectedChanged={setSelectAllEventsChecked}
+                  onSelectAllEventsCheckedChanged={(checked) => {
+                    if (!checked) {
+                      setKeepUpWithNewEventsChecked(false)
+                    }
+                    setSelectAllEventsChecked(checked)
+                  }}
                   onTimeChange={(time) => {
                     setSelectedTimeLimitMicros(time)
                   }}
