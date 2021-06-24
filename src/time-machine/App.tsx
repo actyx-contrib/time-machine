@@ -1,7 +1,15 @@
 import React, { useState } from 'react'
 import { Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
-import { Typography, Grid, FormControl, InputLabel, MenuItem, Select } from '@material-ui/core'
+import {
+  Typography,
+  Grid,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  CircularProgress,
+} from '@material-ui/core'
 import fishes from './fishes'
 import {
   upsertOffsetMapValue,
@@ -47,6 +55,7 @@ export function App(): JSX.Element {
   const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
   const [latestEventMicros, setLatestEventMicros] = useState<number>()
   const [selectedTimeLimitMicros, setSelectedTimeLimitMicros] = useState<number>(0)
+  const [allEventsSelected, setAllEventsSelected] = useState<boolean>(false)
 
   const [selectedFishIndex, setSelectedFishIndex] = useState<number>(0)
   const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
@@ -121,7 +130,7 @@ export function App(): JSX.Element {
     if (!allEvents) return
 
     updateSelectableEvents()
-  }, [selectedTimeLimitMicros])
+  }, [selectedTimeLimitMicros, allEventsSelected])
 
   //Update selected events when max selectable events changes
   React.useEffect(() => {
@@ -134,12 +143,20 @@ export function App(): JSX.Element {
 
   return (
     <div>
-      <div style={{ flex: 1 }}>
-        <Typography variant="h2" component="h2" gutterBottom>
-          Actyx Time Machine
-        </Typography>
-      </div>
-      <br />
+      <Grid container>
+        <Grid item xs={6}>
+          <Typography variant="h2" component="h2" gutterBottom>
+            Actyx Time Machine
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          {isCalculating() ? (
+            <Grid item>
+              <CircularProgress style={{ paddingTop: '20px' }} />
+            </Grid>
+          ) : null}
+        </Grid>
+      </Grid>
 
       <Grid container spacing={6}>
         <Grid container item spacing={4} xs={12}>
@@ -149,28 +166,32 @@ export function App(): JSX.Element {
             </Typography>
           </Grid>
           <Grid item container xs={12} spacing={4} style={paddingStyle}>
-            <Grid item sm={sm_size} md={md_size} xl={lg_size}>
-              <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-                Select fish:
-              </Typography>
-              <FormControl>
-                <InputLabel>Select from imported fishes</InputLabel>
-                <Select
-                  disabled={isCalculating()}
-                  value={selectedFishIndex}
-                  onChange={(event) => {
-                    setSelectedFishIndex(event.target.value as number)
-                  }}
-                >
-                  {importedFishes.map((fish, index) => {
-                    return (
-                      <MenuItem key={index} value={index}>
-                        {fish.where.toString()}
-                      </MenuItem>
-                    )
-                  })}
-                </Select>
-              </FormControl>
+            <Grid item container sm={sm_size} md={md_size} xl={lg_size}>
+              <Grid item xs={12}>
+                <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+                  Select fish:
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl>
+                  <InputLabel>Select from imported fishes</InputLabel>
+                  <Select
+                    disabled={isCalculating()}
+                    value={selectedFishIndex}
+                    onChange={(event) => {
+                      setSelectedFishIndex(event.target.value as number)
+                    }}
+                  >
+                    {importedFishes.map((fish, index) => {
+                      return (
+                        <MenuItem key={index} value={index}>
+                          {fish.where.toString()}
+                        </MenuItem>
+                      )
+                    })}
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
             <Grid item container sm={sm_size} md={md_size} xl={lg_size}>
               <Grid item xs={12}>
@@ -200,6 +221,8 @@ export function App(): JSX.Element {
                   earliestEventMicros={earliestEventMicros}
                   latestEventMicros={latestEventMicros}
                   disabled={isCalculating()}
+                  allEventsSelected={allEventsSelected}
+                  onAllEventsSelectedChanged={setAllEventsSelected}
                   onTimeChange={(time) => {
                     setSelectedTimeLimitMicros(time)
                   }}
@@ -329,14 +352,18 @@ export function App(): JSX.Element {
     setCalculatingOffsetLimits(true)
     if (!allEvents) return
     let newOffsets = {}
-    for (const [sid] of Object.entries(allEvents)) {
-      const selectedOffset = await getLastEventOffsetBeforeTimestamp(
-        allEvents,
-        sid,
-        selectedTimeLimitMicros,
-        pond,
-      )
-      newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
+    if (allEventsSelected) {
+      newOffsets = allEvents
+    } else {
+      for (const [sid] of Object.entries(allEvents)) {
+        const selectedOffset = await getLastEventOffsetBeforeTimestamp(
+          allEvents,
+          sid,
+          selectedTimeLimitMicros,
+          pond,
+        )
+        newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
+      }
     }
     setSelectableEvents(newOffsets)
     setCalculatingOffsetLimits(false)

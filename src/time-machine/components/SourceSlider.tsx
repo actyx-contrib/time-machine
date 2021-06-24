@@ -1,4 +1,12 @@
-import { Slider, Typography, Grid, Checkbox, IconButton } from '@material-ui/core'
+import {
+  Slider,
+  Typography,
+  Grid,
+  Checkbox,
+  IconButton,
+  FormControl,
+  FormControlLabel,
+} from '@material-ui/core'
 import { ArrowBack, ArrowForward } from '@material-ui/icons'
 import React, { useState } from 'react'
 
@@ -72,19 +80,24 @@ export function SourceSlider({
         </IconButton>
       </Grid>
       <Grid item container xs={1}>
-        <Grid item xs={6}>
-          <Typography>Sync</Typography>
-        </Grid>
-        <Grid item xs={6}>
-          <Checkbox
-            checked={syncSelected}
-            onChange={(event) => {
-              onSyncCheckboxChanged(event.target.checked)
-            }}
-            disabled={disabled}
-            color="primary"
-            inputProps={{ 'aria-label': 'primary checkbox' }}
-          />
+        <Grid item>
+          <FormControl fullWidth>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  title="Sync"
+                  checked={syncSelected}
+                  onChange={(event) => {
+                    onSyncCheckboxChanged(event.target.checked)
+                  }}
+                  disabled={disabled}
+                  color="primary"
+                  inputProps={{ 'aria-label': 'primary checkbox' }}
+                />
+              }
+              label={<Typography>Sync</Typography>}
+            />
+          </FormControl>
         </Grid>
       </Grid>
     </Grid>

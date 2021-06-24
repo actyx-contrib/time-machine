@@ -1,5 +1,12 @@
 import React, { useState } from 'react'
-import { Grid, Slider, CircularProgress } from '@material-ui/core'
+import {
+  Grid,
+  Slider,
+  Checkbox,
+  Typography,
+  FormControl,
+  FormControlLabel,
+} from '@material-ui/core'
 import DateFnsUtils from '@date-io/date-fns'
 import { MuiPickersUtilsProvider, KeyboardDateTimePicker } from '@material-ui/pickers'
 
@@ -7,6 +14,8 @@ type TimeSelectionPanelProps = {
   selectedTimeLimitMicros: number
   earliestEventMicros: number
   latestEventMicros: number
+  allEventsSelected: boolean
+  onAllEventsSelectedChanged: (value: boolean) => void
   disabled: boolean
   onTimeChange: (time: number) => void
 }
@@ -15,6 +24,8 @@ export function TimeSelectionPanel({
   selectedTimeLimitMicros,
   earliestEventMicros,
   latestEventMicros,
+  allEventsSelected,
+  onAllEventsSelectedChanged,
   disabled,
   onTimeChange,
 }: TimeSelectionPanelProps): JSX.Element {
@@ -24,14 +35,14 @@ export function TimeSelectionPanel({
     useState<number>(selectedTimeLimitMicros)
 
   return (
-    <div>
+    <Grid item container xs={12} spacing={2}>
       <Grid item xs={12}>
         <Slider
           style={{ maxWidth: 350 }}
           value={timeSliderValueMicros}
           min={earliestEventMicros}
           max={latestEventMicros + 1}
-          disabled={disabled}
+          disabled={disabled || allEventsSelected}
           onChange={(_event, value) => {
             setTimeSliderValueMicros(+value)
           }}
@@ -50,7 +61,7 @@ export function TimeSelectionPanel({
               ampm={false}
               label="Include events up to:"
               value={microsToMillis(timePickerValueMicros)}
-              disabled={disabled}
+              disabled={disabled || allEventsSelected}
               autoOk={true}
               // eslint-disable-next-line @typescript-eslint/no-empty-function
               onChange={() => {}}
@@ -68,13 +79,25 @@ export function TimeSelectionPanel({
             />
           </MuiPickersUtilsProvider>
         </Grid>
-        {disabled ? (
-          <Grid item>
-            <CircularProgress hidden={!disabled} />
-          </Grid>
-        ) : null}
       </Grid>
-    </div>
+      <Grid item container xs={12}>
+        <FormControl fullWidth>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={allEventsSelected}
+                onChange={(event) => {
+                  onAllEventsSelectedChanged(event.target.checked)
+                }}
+                disabled={disabled}
+                color="primary"
+              />
+            }
+            label={<Typography>Select all events</Typography>}
+          />
+        </FormControl>
+      </Grid>
+    </Grid>
   )
 }
 
