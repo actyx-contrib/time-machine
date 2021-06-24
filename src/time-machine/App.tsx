@@ -291,7 +291,6 @@ export function App(): JSX.Element {
             {dependencies['@actyx/pond']
               ? dependencies['@actyx/pond'].version
               : 'Error getting version'}
-            {}
           </Typography>
         </Grid>
       </Grid>
