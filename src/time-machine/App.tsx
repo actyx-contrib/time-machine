@@ -19,6 +19,11 @@ import { TimeSelectionPanel } from './components/TimeSelectionPanel'
 import { TagsAlert } from './components/TagsAlert'
 import { TagsSelection } from './components/TagsSelection'
 
+// package-lock is resolved but eslint is not happy
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { dependencies } from '../../package-lock.json'
+
 const ACTYX_REFRESH_INTERVAL = 10000
 
 const sm_size = 12
@@ -279,6 +284,15 @@ export function App(): JSX.Element {
               <StatePanel currentState={currentFishState} previousState={previousFishState} />
             </Grid>
           </Grid>
+        </Grid>
+        <Grid item xs={12}>
+          <Typography align="right" style={{ fontWeight: 'bold' }}>
+            Actyx Pond Version:{' '}
+            {dependencies['@actyx/pond']
+              ? dependencies['@actyx/pond'].version
+              : 'Error getting version'}
+            {}
+          </Typography>
         </Grid>
       </Grid>
     </div>
