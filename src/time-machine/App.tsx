@@ -9,6 +9,8 @@ import {
   MenuItem,
   Select,
   CircularProgress,
+  Checkbox,
+  FormControlLabel,
 } from '@material-ui/core'
 import fishes from './fishes'
 import {
@@ -55,14 +57,16 @@ export function App(): JSX.Element {
   const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
   const [latestEventMicros, setLatestEventMicros] = useState<number>()
   const [selectedTimeLimitMicros, setSelectedTimeLimitMicros] = useState<number>(0)
-  const [allEventsSelected, setAllEventsSelected] = useState<boolean>(false)
 
   const [selectedFishIndex, setSelectedFishIndex] = useState<number>(0)
   const [selectedTags, setSelectedTags] = React.useState(whereToTagsString(importedFishes[0].where))
+
+  const [selectAllEventsChecked, setSelectAllEventsChecked] = useState<boolean>(false)
+  const [keepUpWithNewEventsChecked, setKeepUpWithNewEventsChecked] = useState<boolean>(false)
+  const [syncChecked, setSyncChecked] = useState<boolean>(false)
   const [selectedSyncCheckboxesMap, setSelectedSyncCheckbox] = React.useState<{
     readonly [x: string]: boolean
   }>({})
-  const [checkboxLock, setCheckboxLock] = useState<boolean>(false)
 
   const [calculatingOffsetLimits, setCalculatingOffsetLimits] = React.useState<boolean>(false)
   const [calculatingFishState, setCalculatingFishState] = React.useState<boolean>(false)
@@ -130,7 +134,12 @@ export function App(): JSX.Element {
     if (!allEvents) return
 
     updateSelectableEvents()
-  }, [selectedTimeLimitMicros, allEventsSelected])
+  }, [selectedTimeLimitMicros, selectAllEventsChecked])
+
+  React.useEffect(() => {
+    if (!allEvents) return
+    setSelectedEvents(allEvents)
+  }, [allEvents, keepUpWithNewEventsChecked])
 
   //Update selected events when max selectable events changes
   React.useEffect(() => {
@@ -221,8 +230,8 @@ export function App(): JSX.Element {
                   earliestEventMicros={earliestEventMicros}
                   latestEventMicros={latestEventMicros}
                   disabled={isCalculating()}
-                  allEventsSelected={allEventsSelected}
-                  onAllEventsSelectedChanged={setAllEventsSelected}
+                  allEventsSelected={selectAllEventsChecked}
+                  onAllEventsSelectedChanged={setSelectAllEventsChecked}
                   onTimeChange={(time) => {
                     setSelectedTimeLimitMicros(time)
                   }}
@@ -240,10 +249,31 @@ export function App(): JSX.Element {
               <Grid item xs={12}>
                 {earliestEventMicros && latestEventMicros ? (
                   <div>
+                    <FormControl fullWidth>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={keepUpWithNewEventsChecked}
+                            onChange={(event) => {
+                              if (event.target.checked) {
+                                setSelectAllEventsChecked(true)
+                              }
+                              setKeepUpWithNewEventsChecked(event.target.checked)
+                            }}
+                            disabled={isCalculating()}
+                            color="primary"
+                          />
+                        }
+                        label={<Typography>Keep up with new events (live update)</Typography>}
+                      />
+                    </FormControl>
                     {Object.entries(selectableEvents).map(([sid, events]) => {
-                      const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && checkboxLock
+                      const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && syncChecked
                       const disabledByCalculatingLock = isCalculating()
-                      const disabled = disabledByCalculatingLock || disabledBySyncLock
+                      const disabled =
+                        disabledByCalculatingLock ||
+                        disabledBySyncLock ||
+                        keepUpWithNewEventsChecked
                       return (
                         <SourceSlider
                           sid={sid}
@@ -270,7 +300,7 @@ export function App(): JSX.Element {
                               ...selectedSyncCheckboxesMap,
                               [sid]: checked,
                             })
-                            setCheckboxLock(checked)
+                            setSyncChecked(checked)
                             if (checked) {
                               syncOffsetMapOnSource(
                                 sid,
@@ -352,7 +382,7 @@ export function App(): JSX.Element {
     setCalculatingOffsetLimits(true)
     if (!allEvents) return
     let newOffsets = {}
-    if (allEventsSelected) {
+    if (selectAllEventsChecked) {
       newOffsets = allEvents
     } else {
       for (const [sid] of Object.entries(allEvents)) {

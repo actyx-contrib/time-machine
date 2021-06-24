@@ -36,6 +36,23 @@ export function TimeSelectionPanel({
 
   return (
     <Grid item container xs={12} spacing={2}>
+      <Grid item container xs={12}>
+        <FormControl fullWidth>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={allEventsSelected}
+                onChange={(event) => {
+                  onAllEventsSelectedChanged(event.target.checked)
+                }}
+                disabled={disabled}
+                color="primary"
+              />
+            }
+            label={<Typography>Select all events (no time limit)</Typography>}
+          />
+        </FormControl>
+      </Grid>
       <Grid item xs={12}>
         <Slider
           style={{ maxWidth: 350 }}
@@ -79,23 +96,6 @@ export function TimeSelectionPanel({
             />
           </MuiPickersUtilsProvider>
         </Grid>
-      </Grid>
-      <Grid item container xs={12}>
-        <FormControl fullWidth>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={allEventsSelected}
-                onChange={(event) => {
-                  onAllEventsSelectedChanged(event.target.checked)
-                }}
-                disabled={disabled}
-                color="primary"
-              />
-            }
-            label={<Typography>Select all events (no time limit)</Typography>}
-          />
-        </FormControl>
       </Grid>
     </Grid>
   )
