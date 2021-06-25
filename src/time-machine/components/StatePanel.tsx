@@ -11,7 +11,7 @@ export function StatePanel({ currentState, previousState }: StatePanelProps): JS
   return (
     <div>
       <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-        Resulting Fish-State:
+        Resulting previous and current fish-state (diff):
       </Typography>
       <Card>
         <CardContent>

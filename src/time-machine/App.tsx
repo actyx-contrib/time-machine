@@ -33,6 +33,7 @@ import { TagsSelection } from './components/TagsSelection'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { dependencies } from '../../package-lock.json'
+import { CustomTooltip } from './components/CustomTooltip'
 
 const ACTYX_REFRESH_INTERVAL = 10000
 
@@ -47,6 +48,15 @@ const paddingStyle = { paddingLeft: 30, paddingRight: 0 }
 export function App(): JSX.Element {
   //Import fishes from user-supplied fishes.ts
   const importedFishes: Fish<{ [p: string]: unknown }, { [p: string]: unknown }>[] = fishes()
+
+  if (importedFishes.length == 0) {
+    return (
+      <Typography>
+        Error: No fishes were passed to the application. Please make sure you finished the setup
+        steps in the README.md file.
+      </Typography>
+    )
+  }
 
   const pond = usePond()
 
@@ -178,10 +188,19 @@ export function App(): JSX.Element {
           </Grid>
           <Grid item container xs={12} spacing={4} style={paddingStyle}>
             <Grid item container sm={sm_size} md={md_size} xl={lg_size}>
-              <Grid item xs={12}>
+              <Grid item xs={3}>
                 <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
                   Select fish:
                 </Typography>
+              </Grid>
+              <Grid item xs={9}>
+                <CustomTooltip>
+                  <Typography>
+                    This is a list of the fishes which you defined in your created TypeScript file.
+                    What you see are the tags of the respective fish. If these are not the fishes
+                    you expected, please refer to the README.md file.
+                  </Typography>
+                </CustomTooltip>
               </Grid>
               <Grid item xs={12}>
                 <FormControl>
@@ -205,10 +224,19 @@ export function App(): JSX.Element {
               </Grid>
             </Grid>
             <Grid item container sm={sm_size} md={md_size} xl={lg_size}>
-              <Grid item xs={12}>
+              <Grid item xs={3}>
                 <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-                  Fish properties:
+                  Select tags:
                 </Typography>
+              </Grid>
+              <Grid item xs={9}>
+                <CustomTooltip>
+                  <Typography>
+                    This field can be used to override the tags defined by the selected fish. These
+                    are the tags that define which events will be applied to the fish in order to
+                    calculate the resulting state.
+                  </Typography>
+                </CustomTooltip>
               </Grid>
               <Grid item xs={2}>
                 <Typography>Tags:</Typography>
@@ -222,10 +250,22 @@ export function App(): JSX.Element {
                 />
               </Grid>
             </Grid>
-            <Grid item sm={sm_size} md={md_size} xl={lg_size}>
-              <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-                Select time limit:
-              </Typography>
+            <Grid item container sm={sm_size} md={md_size} xl={lg_size}>
+              <Grid item xs={3}>
+                <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
+                  Select time limit:
+                </Typography>
+              </Grid>
+              <Grid item xs={9}>
+                <CustomTooltip>
+                  <Typography>
+                    This field can be used to limit the events that are applied to the fish. If a
+                    timestamp is selected, this means that only events that occurred before this
+                    timestamp will be applied to the fish.
+                  </Typography>
+                </CustomTooltip>
+              </Grid>
+
               {earliestEventMicros && latestEventMicros && selectedTimeLimitMicros > 0 ? (
                 <TimeSelectionPanel
                   selectedTimeLimitMicros={selectedTimeLimitMicros}
@@ -248,10 +288,24 @@ export function App(): JSX.Element {
               )}
             </Grid>
             <Grid item container sm={sm_size} md={md_size} xl={lg_size}>
-              <Grid item xs={12}>
+              <Grid item xs={3}>
                 <Typography variant="h4" component="h4" className="sub-header" gutterBottom>
-                  Select events from your ActyxOS nodes:
+                  Select events:
                 </Typography>
+              </Grid>
+              <Grid item xs={9}>
+                <CustomTooltip>
+                  <Typography>
+                    These options allow to select which events specifically should be applied to the
+                    fish. Each slider represents the events of a single event source / ActyxOS node.
+                    The &quot;Sync&quot;-option ensures that all events by other sources that
+                    happened prior to the selected event are also applied to the fish. This makes
+                    sure that the calculated fish-state is consistent with the fish-state that
+                    occurred in the real application when the event happened. The &quot;Keep up with
+                    new events&quot;-option always selects all events and includes new events as
+                    they arrive.
+                  </Typography>
+                </CustomTooltip>
               </Grid>
               <Grid item xs={12}>
                 {earliestEventMicros && latestEventMicros ? (
