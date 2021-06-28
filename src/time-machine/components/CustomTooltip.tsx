@@ -15,10 +15,14 @@ const HtmlTooltip = withStyles((theme) => ({
   },
 }))(Tooltip)
 
-export function CustomTooltip({ children }): JSX.Element {
+type CustomTooltipProps = {
+  children: JSX.Element
+}
+
+export function CustomTooltip(props: CustomTooltipProps): JSX.Element {
   return (
     <HtmlTooltip
-      title={<React.Fragment>{children}</React.Fragment>}
+      title={<React.Fragment>{props.children}</React.Fragment>}
       style={{ paddingBottom: '20px', paddingTop: '0px' }}
     >
       <IconButton>
