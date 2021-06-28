@@ -78,29 +78,39 @@ describe('ActyxEventGetters should', () => {
   })
 })
 
-describe('getLastOffsetBeforeTimestamp()', () => {
-  let testPond: Pond
-  let currentOffsets: OffsetMap
-  const numberOfEvents = 3
+describe('getLastOffsetBeforeTimestamp() with singleSourceTestPond', () => {
+  let singleSourceTestPond: Pond
+  let alternatingSourceTestPond: Pond
+  let currentSingleSourceOffsets: OffsetMap
+  let currentAlternatingSourceOffsets: OffsetMap
+  const numberOfAlternatingSources = 3
+  const numberOfAlternatingSourceEvents = 1
+  const numberOfSingleSourceEvents = 3
   const sid = 'source_0'
 
   beforeAll(async () => {
-    testPond = createSingleSourceTestPond(numberOfEvents)
-    currentOffsets = await testPond.events().currentOffsets()
+    singleSourceTestPond = createSingleSourceTestPond(numberOfSingleSourceEvents)
+    alternatingSourceTestPond = createAlternatingSourceTestPond(
+      numberOfAlternatingSourceEvents,
+      numberOfAlternatingSources,
+    )
+    currentSingleSourceOffsets = await singleSourceTestPond.events().currentOffsets()
+    currentAlternatingSourceOffsets = await alternatingSourceTestPond.events().currentOffsets()
   })
   afterAll(() => {
-    testPond.dispose()
+    singleSourceTestPond.dispose()
+    alternatingSourceTestPond.dispose()
   })
 
   it('should return offset of last event before timestamp in single-source pond', async () => {
-    for (let i = 0; i < numberOfEvents; i++) {
+    for (let i = 0; i < numberOfSingleSourceEvents; i++) {
       const timestampShortlyAfterEvent = BASE_DATE + i + 1
       expect(
         await actyxFunc.getLastEventOffsetBeforeTimestamp(
-          currentOffsets,
+          currentSingleSourceOffsets,
           sid,
           timestampShortlyAfterEvent,
-          testPond,
+          singleSourceTestPond,
         ),
       ).toBe(i)
     }
@@ -110,25 +120,40 @@ describe('getLastOffsetBeforeTimestamp()', () => {
     const timestampBeforeFirstEvent = BASE_DATE
     expect(
       await actyxFunc.getLastEventOffsetBeforeTimestamp(
-        currentOffsets,
+        currentSingleSourceOffsets,
         sid,
         timestampBeforeFirstEvent,
-        testPond,
+        singleSourceTestPond,
       ),
     ).toBe(-1)
   })
 
   it('should return the offset of the last event for timestamp after last event in single-source pond', async () => {
-    const timestampAfterLastEvent = BASE_DATE + numberOfEvents + 1
-    const offsetOfLastEvent = numberOfEvents - 1
+    const timestampAfterLastEvent = BASE_DATE + numberOfSingleSourceEvents + 1
+    const offsetOfLastEvent = numberOfSingleSourceEvents - 1
     expect(
       await actyxFunc.getLastEventOffsetBeforeTimestamp(
-        currentOffsets,
+        currentSingleSourceOffsets,
         sid,
         timestampAfterLastEvent,
-        testPond,
+        singleSourceTestPond,
       ),
     ).toBe(offsetOfLastEvent)
+  })
+
+  it('should return the offset of the last event for timestamp after last event in alternating-source pond', async () => {
+    for (let i = 0; i < 3; i++) {
+      const timestampAfterAllEvents = BASE_DATE + numberOfAlternatingSources + 1
+      const offsetOfLastEvent = 0
+      expect(
+        await actyxFunc.getLastEventOffsetBeforeTimestamp(
+          currentAlternatingSourceOffsets,
+          `source_${i}`,
+          timestampAfterAllEvents,
+          alternatingSourceTestPond,
+        ),
+      ).toBe(offsetOfLastEvent)
+    }
   })
 })
 
@@ -152,18 +177,18 @@ describe('reduceTwinStateFromEvents', () => {
 })
 
 describe('syncSelectedEventsOnTimestamp', () => {
-  let testPond: Pond
+  let alternatingSourceTestPond: Pond
   beforeAll(() => {
-    testPond = createAlternatingSourceTestPond(2, 2)
+    alternatingSourceTestPond = createAlternatingSourceTestPond(2, 2)
   })
   afterAll(() => {
-    testPond.dispose()
+    alternatingSourceTestPond.dispose()
   })
   it('should give the offset of the event the happened before the given timestamp for each source', async () => {
     const offsets = await actyxFunc.syncOffsetMapOnTimestamp(
       BASE_DATE + 2,
-      await testPond.events().currentOffsets(),
-      testPond,
+      await alternatingSourceTestPond.events().currentOffsets(),
+      alternatingSourceTestPond,
     )
     expect(offsets['source_0']).toBe(1)
     expect(offsets['source_1']).toBe(0)
@@ -190,16 +215,15 @@ function createAlternatingSourceTestPond(
   let globalEventCount = 0
   for (let i = 0; i < numberOfEventsPerSource; i++) {
     for (let j = 0; j < numberOfSources; j++) {
-      testPond.directlyPushEvents([
-        {
-          psn: i,
-          sourceId: `source_${j}`,
-          timestamp: BASE_DATE + globalEventCount,
-          lamport: globalEventCount,
-          tags: ['mock_tag'],
-          payload: i,
-        },
-      ])
+      const event = {
+        psn: i,
+        sourceId: `source_${j}`,
+        timestamp: BASE_DATE + globalEventCount,
+        lamport: globalEventCount,
+        tags: ['mock_tag'],
+        payload: i,
+      }
+      testPond.directlyPushEvents([event])
       globalEventCount++
     }
   }
