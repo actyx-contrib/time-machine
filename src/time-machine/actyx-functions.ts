@@ -1,4 +1,4 @@
-import { ActyxEvent, OffsetMap, Pond, Tags, Where } from '@actyx/pond'
+import { ActyxEvent, EventsSortOrder, OffsetMap, Pond, Tags, Where } from '@actyx/pond'
 
 /**
  * Chunk size for all chunk-based queries
@@ -248,7 +248,7 @@ export function querySelectedEventsChunked(
   return pond.events().queryKnownRangeChunked(
     {
       upperBound: offsets,
-      order: 'Asc',
+      order: EventsSortOrder.Ascending,
       query: tagsFromString(tags),
     },
     QUERY_CHUNK_SIZE,

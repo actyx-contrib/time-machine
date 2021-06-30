@@ -87,10 +87,11 @@ export function App(): JSX.Element {
   const [previousFishState, setPreviousFishState] = useState({})
 
   //Look for new event offsets every x nanoseconds
+
   React.useEffect(() => {
-    pond.events().currentOffsets().then(setAllEvents)
+    pond.events().present().then(setAllEvents)
     const refresh = setInterval(() => {
-      pond.events().currentOffsets().then(setAllEvents)
+      pond.events().present().then(setAllEvents)
     }, ACTYX_REFRESH_INTERVAL)
     return () => {
       clearInterval(refresh)

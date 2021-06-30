@@ -57,7 +57,7 @@ describe('ActyxEventGetters should', () => {
     for (let testSource = 0; testSource < 3; testSource++) {
       await testPond
         .events()
-        .currentOffsets()
+        .present()
         .then((pondOffsets) => {
           actyxFunc
             .getLatestActyxEventBySid(pondOffsets, `source_${testSource}`, testPond)
@@ -94,8 +94,8 @@ describe('getLastOffsetBeforeTimestamp() with singleSourceTestPond', () => {
       numberOfAlternatingSourceEvents,
       numberOfAlternatingSources,
     )
-    currentSingleSourceOffsets = await singleSourceTestPond.events().currentOffsets()
-    currentAlternatingSourceOffsets = await alternatingSourceTestPond.events().currentOffsets()
+    currentSingleSourceOffsets = await singleSourceTestPond.events().present()
+    currentAlternatingSourceOffsets = await alternatingSourceTestPond.events().present()
   })
   afterAll(() => {
     singleSourceTestPond.dispose()
@@ -187,7 +187,7 @@ describe('syncSelectedEventsOnTimestamp', () => {
   it('should give the offset of the event the happened before the given timestamp for each source', async () => {
     const offsets = await actyxFunc.syncOffsetMapOnTimestamp(
       BASE_DATE + 2,
-      await alternatingSourceTestPond.events().currentOffsets(),
+      await alternatingSourceTestPond.events().present(),
       alternatingSourceTestPond,
     )
     expect(offsets['source_0']).toBe(1)
@@ -216,8 +216,8 @@ function createAlternatingSourceTestPond(
   for (let i = 0; i < numberOfEventsPerSource; i++) {
     for (let j = 0; j < numberOfSources; j++) {
       const event = {
-        psn: i,
-        sourceId: `source_${j}`,
+        offset: i,
+        stream: `source_${j}`,
         timestamp: BASE_DATE + globalEventCount,
         lamport: globalEventCount,
         tags: ['mock_tag'],
@@ -241,8 +241,8 @@ function createSequentialSourceTestPond(
     for (let j = 0; j < numberOfEventsPerSource; j++) {
       testPond.directlyPushEvents([
         {
-          psn: j,
-          sourceId: `source_${i}`,
+          offset: j,
+          stream: `source_${i}`,
           timestamp: BASE_DATE + globalEventCount,
           lamport: globalEventCount,
           tags: ['mock_tag'],
@@ -260,8 +260,8 @@ function createSingleSourceTestPond(numberOfEvents: number): Pond {
   for (let i = 0; i < numberOfEvents; i++) {
     testPond.directlyPushEvents([
       {
-        psn: i,
-        sourceId: `source_0`,
+        offset: i,
+        stream: `source_0`,
         timestamp: BASE_DATE + i,
         lamport: i,
         tags: ['mock_tag'],

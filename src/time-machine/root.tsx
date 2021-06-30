@@ -10,11 +10,7 @@ const onError = () => {
 }
 
 ReactDOM.render(
-  <Pond
-    url={process.env.npm_package_config_pondurl}
-    loadComponent={<ActyxLoadingView />}
-    onError={onError}
-  >
+  <Pond loadComponent={<ActyxLoadingView />} onError={onError}>
     <div style={{ margin: '30px 20px' }}>
       <App />
     </div>
