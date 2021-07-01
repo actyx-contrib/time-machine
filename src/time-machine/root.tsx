@@ -10,7 +10,15 @@ const onError = () => {
 }
 
 ReactDOM.render(
-  <Pond loadComponent={<ActyxLoadingView />} onError={onError}>
+  <Pond
+    loadComponent={<ActyxLoadingView />}
+    onError={onError}
+    manifest={{
+      appId: 'com.example.timemachine',
+      displayName: 'Time Machine',
+      version: '1.0',
+    }}
+  >
     <div style={{ margin: '30px 20px' }}>
       <App />
     </div>

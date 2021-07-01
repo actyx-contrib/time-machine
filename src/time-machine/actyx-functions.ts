@@ -239,23 +239,26 @@ export async function syncOffsetMapOnTimestamp(
  * @param tags Only events that match these tags will be included in the query.
  * @param callback Function which will be called with each chunk of events
  */
-export function querySelectedEventsChunked(
+export async function querySelectedEventsChunked(
   pond: Pond,
   offsets: { readonly [x: string]: number },
   tags: string,
   callback: (events: ActyxEvent[]) => void,
-): any {
-  return pond.events().queryKnownRangeChunked(
-    {
-      upperBound: offsets,
-      order: EventsSortOrder.Ascending,
-      query: tagsFromString(tags),
-    },
-    QUERY_CHUNK_SIZE,
-    ({ events }) => {
-      callback(events)
-    },
-  )
+): Promise<void> {
+  return new Promise<void>((resolve) => {
+    pond.events().queryKnownRangeChunked(
+      {
+        upperBound: offsets,
+        order: EventsSortOrder.Ascending,
+        query: tagsFromString(tags),
+      },
+      QUERY_CHUNK_SIZE,
+      ({ events }) => {
+        callback(events)
+      },
+      resolve,
+    )
+  })
 }
 
 /**

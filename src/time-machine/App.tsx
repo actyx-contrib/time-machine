@@ -423,14 +423,20 @@ export function App(): JSX.Element {
     const initialState = importedFishes[selectedFishIndex].initialState
     let fishStates = { previousState: {}, currentState: initialState }
     let lastAppliedEvent = {}
+    let run = false
+
     await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
+      run = true
       fishStates = reduceTwinStateFromEvents(
         events,
         importedFishes[selectedFishIndex].onEvent,
         fishStates.currentState,
       )
       lastAppliedEvent = events[events.length - 1]
+      console.log(`Inside callback ${JSON.stringify(fishStates)}`)
     })
+
+    console.log(`Outside callback ${JSON.stringify(fishStates)}. Callback run? ${run}`)
     setPreviousFishState(fishStates.previousState)
     setCurrentFishState(fishStates.currentState)
     setRecentEvent(lastAppliedEvent)
