@@ -29,9 +29,6 @@ import { TimeSelectionPanel } from './components/TimeSelectionPanel'
 import { TagsAlert } from './components/TagsAlert'
 import { TagsSelection } from './components/TagsSelection'
 
-// package-lock is resolved but eslint is not happy
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import { dependencies } from '../../package-lock.json'
 import { CustomTooltip } from './components/CustomTooltip'
 
@@ -260,9 +257,9 @@ export function App(): JSX.Element {
               <Grid item xs={9}>
                 <CustomTooltip>
                   <Typography>
-                    This field can be used to limit the events that are applied to the fish. If a
-                    timestamp is selected, this means that only events that occurred before this
-                    timestamp will be applied to the fish.
+                    This field can be used to limit the events that can be selected. If a time value
+                    is chosen, this means that only events that occurred before this timestamp will
+                    be selectable at the &quot;Select Events&quot;-section.
                   </Typography>
                 </CustomTooltip>
               </Grid>

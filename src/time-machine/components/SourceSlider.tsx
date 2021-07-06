@@ -43,7 +43,7 @@ export function SourceSlider({
             labelPlacement="start"
             control={
               <Slider
-                style={{ maxWidth: 350 }}
+                style={{ maxWidth: 350, minWidth: 100 }}
                 value={sliderValue}
                 min={0}
                 max={numberOfAllEvents}
