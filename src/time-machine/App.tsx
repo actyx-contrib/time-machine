@@ -295,7 +295,8 @@ export function App(): JSX.Element {
                 <CustomTooltip>
                   <Typography>
                     These options allow to select which events specifically should be applied to the
-                    fish. Each slider represents the events of a single event source / ActyxOS node.
+                    fish. Each slider represents the events of a single event stream. The stream
+                    name is composed of the ActyxOS node identifier and a stream-specific suffix.
                     The &quot;Sync&quot;-option ensures that all events by other sources that
                     happened prior to the selected event are also applied to the fish. This makes
                     sure that the calculated fish-state is consistent with the fish-state that
