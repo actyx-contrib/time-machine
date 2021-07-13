@@ -13,6 +13,7 @@ import {
   FormControlLabel,
 } from '@material-ui/core'
 import fishes from './fishes'
+import { ContextualOffsetMap } from './types'
 import {
   upsertOffsetMapValue,
   getLastEventOffsetBeforeTimestamp,
@@ -21,6 +22,7 @@ import {
   reduceTwinStateFromEvents,
   whereToTagsString,
   syncOffsetMapOnSource,
+  getCountAndOffsetOfEventsMatchingTags,
 } from './actyx-functions'
 import { SourceSlider } from './components/SourceSlider'
 import { StatePanel } from './components/StatePanel'
@@ -58,8 +60,15 @@ export function App(): JSX.Element {
   const pond = usePond()
 
   const [allEvents, setAllEvents] = useState<OffsetMap>()
+  //const [allEventsMatchingSelectedTags, setAllEventsMatchingSelectedTags] = useState<OffsetMap>()
+
   const [selectableEvents, setSelectableEvents] = useState<OffsetMap>({})
+  const [selectableEventsMatchingSelectedTags, setSelectableEventsMatchingSelectedTags] =
+    useState<ContextualOffsetMap>({})
+
   const [selectedEvents, setSelectedEvents] = useState<OffsetMap>({})
+  const [selectedEventsMatchingSelectedTags, setEventsMatchingSelectedTags] =
+    useState<ContextualOffsetMap>({})
 
   const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
   const [latestEventMicros, setLatestEventMicros] = useState<number>()
@@ -86,14 +95,29 @@ export function App(): JSX.Element {
   //Look for new event offsets every x nanoseconds
 
   React.useEffect(() => {
-    pond.events().present().then(setAllEvents)
+    pond
+      .events()
+      .present()
+      .then((newOffsets) => {
+        setAllEvents(newOffsets)
+      })
     const refresh = setInterval(() => {
-      pond.events().present().then(setAllEvents)
+      pond
+        .events()
+        .present()
+        .then((newOffsets) => {
+          setAllEvents(newOffsets)
+        })
     }, ACTYX_REFRESH_INTERVAL)
     return () => {
       clearInterval(refresh)
     }
   }, [])
+
+  React.useEffect(() => {
+    if (!allEvents) return
+    updateContextualOffsetsForSelectableEvents()
+  }, [allEvents, selectedTags])
 
   //Reload the time boundaries whenever an earlier/later event arrives or the tags change
   React.useEffect(() => {
@@ -138,18 +162,21 @@ export function App(): JSX.Element {
   }, [selectedFishIndex])
 
   //Update selectable events when time limit changes
-  React.useEffect(() => {
+  /*React.useEffect(() => {
     if (!allEvents) return
 
     updateSelectableEvents()
   }, [selectedTimeLimitMicros, selectAllEventsChecked, allEvents])
-
+  */
+  /*
   React.useEffect(() => {
     if (!allEvents) return
+
     if (keepUpWithNewEventsChecked) {
       setSelectedEvents(allEvents)
     }
   }, [allEvents, keepUpWithNewEventsChecked])
+  */
 
   //Update selected events when max selectable events changes
   React.useEffect(() => {
@@ -463,6 +490,22 @@ export function App(): JSX.Element {
     }
     setSelectableEvents(newOffsets)
     setCalculatingOffsetLimits(false)
+  }
+
+  async function updateContextualOffsetsForSelectableEvents() {
+    let newOffsets = {}
+    for (const [sid] of Object.entries(allEvents!)) {
+      const contextualOffsetForSid = await (
+        await getCountAndOffsetOfEventsMatchingTags(
+          allEvents!,
+          sid,
+          tagsFromString(selectedTags),
+          pond,
+        )
+      ).eventCount
+      newOffsets = upsertOffsetMapValue(newOffsets, sid, contextualOffsetForSid)
+    }
+    setSelectableEvents(newOffsets)
   }
 
   /**

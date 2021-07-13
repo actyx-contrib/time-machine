@@ -1,15 +1,20 @@
-import { ActyxEvent, EventsSortOrder, OffsetMap, Pond, Tags, Where } from '@actyx/pond'
+import { ActyxEvent, EventsSortOrder, Offset, OffsetMap, Pond, Tags, Where } from '@actyx/pond'
 
 /**
  * Chunk size for all chunk-based queries
  */
-const QUERY_CHUNK_SIZE = 5000
+export const QUERY_CHUNK_SIZE = 5000
 
 /**
  * Type that describes the relative timeliness
  * of a timestamp with respect to a time span.
  */
 export type RelativeTiming = 'beforeRange' | 'withinRange' | 'afterRange'
+
+export type TaggedQueryResult = {
+  eventCount: number
+  finalOffset: Offset
+}
 
 /**
  * Checks whether a timestamp is inside, before or after a timerange defined by a lower bound and an upper bound.
@@ -119,6 +124,63 @@ export async function getActyxEventByOffset(
 }
 
 /**
+ * TODO: Finish Documentation
+ * @param offsets
+ * @param sid
+ * @param tags
+ * @param pond
+ * @returns
+ */
+export async function getCountAndOffsetOfEventsMatchingTags(
+  offsets: OffsetMap,
+  sid: string,
+  tags: Tags<any>,
+  pond: Pond,
+): Promise<TaggedQueryResult> {
+  return new Promise<TaggedQueryResult>((resolve) => {
+    let eventCount = 0
+    let finalOffset = -1
+    const filterForOneSource = { [sid]: offsets[sid] }
+    const cancelQuerySubscription = pond.events().queryKnownRangeChunked(
+      { query: tags, upperBound: filterForOneSource },
+      QUERY_CHUNK_SIZE,
+      (eventChunk) => {
+        const chunkLength = eventChunk.events.length
+        eventCount += chunkLength
+        finalOffset = eventChunk.events[chunkLength - 1].meta.offset
+      },
+      () => {
+        cancelQuerySubscription()
+        resolve({ eventCount: eventCount, finalOffset: finalOffset })
+      },
+    )
+  })
+}
+
+export async function reduceEventsMatching(
+  allEvents: OffsetMap,
+  sid: string,
+  tags: string[],
+  pond: Pond,
+): Promise<number> {
+  return new Promise<number>((resolve) => {
+    let eventCount = 0
+    const filterForOneSource = { [sid]: allEvents[sid] }
+    const cancelQuerySubscription = pond.events().queryKnownRangeChunked(
+      { query: Tags(...tags), upperBound: filterForOneSource },
+      QUERY_CHUNK_SIZE,
+      (eventChunk) => {
+        eventCount += eventChunk.events.length
+      },
+      () => {
+        cancelQuerySubscription()
+        resolve(eventCount)
+      },
+    )
+  })
+}
+
+/**
  * Searches the events in your pond for the single event which
  * happened directly prior to the given timestamp
  * @param offsets Offsets which dictate the range of events that are included
@@ -130,16 +192,21 @@ export async function getActyxEventByOffset(
  * Returns -1 if no events happened prior to the timestamp.
  */
 export async function getLastEventOffsetBeforeTimestamp(
-  offsets: OffsetMap,
+  allEvents: OffsetMap,
   sid: string,
   timestampMicros: number,
   pond: Pond,
 ): Promise<number> {
-  const relativeTiming = await compareTimestampWithOffsetBounds(offsets, sid, timestampMicros, pond)
+  const relativeTiming = await compareTimestampWithOffsetBounds(
+    allEvents,
+    sid,
+    timestampMicros,
+    pond,
+  )
   if (relativeTiming === 'beforeRange') {
     return -1
   }
-  const maxOffset = offsets[sid]
+  const maxOffset = allEvents[sid]
   if (relativeTiming === 'afterRange') {
     return maxOffset
   }
