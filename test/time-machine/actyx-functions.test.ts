@@ -1,9 +1,10 @@
-import { ActyxEvent, Fish, OffsetMap, Pond } from '@actyx/pond'
+import { ActyxEvent, Fish, OffsetMap, Pond, Tags } from '@actyx/pond'
 import * as actyxFunc from '../../src/time-machine/actyx-functions'
 import { mkTestFish } from './test-fish/test-fish'
 import { TestFishEvent, TestFishState } from './test-fish/types'
 
 const BASE_DATE = 10000
+const MOCK_TAGS = ['mock_tag']
 
 describe('Tags - String converters', () => {
   it('should be reversible', () => {
@@ -195,6 +196,60 @@ describe('syncSelectedEventsOnTimestamp', () => {
   })
 })
 
+describe('getCountOfAllEventsMatchingTags', () => {
+  const numberOfSources = 5
+  const numberOfEventsPerSource = 5
+  const targetSource = 0
+  let alternatingSourceTestPond: Pond
+  beforeAll(() => {
+    alternatingSourceTestPond = createAlternatingSourceTestPond(
+      numberOfEventsPerSource,
+      numberOfSources,
+    )
+  })
+  afterAll(() => {
+    alternatingSourceTestPond.dispose()
+  })
+
+  it('should give the count of events that match the given source and tags', async () => {
+    const expectedResult: actyxFunc.TaggedQueryResult = {
+      eventCount: numberOfEventsPerSource,
+      finalOffset: numberOfEventsPerSource - 1,
+    }
+    const allEventsOffsetMap = getOffsetMapForTestPond(numberOfEventsPerSource, numberOfSources)
+    console.log(JSON.stringify(allEventsOffsetMap))
+
+    const queryResult = await actyxFunc.getCountAndOffsetOfEventsMatchingTags(
+      allEventsOffsetMap,
+      `source_${targetSource}`,
+      Tags(...MOCK_TAGS),
+      alternatingSourceTestPond,
+    )
+    expect(queryResult).toEqual(expectedResult)
+  })
+  //Commented out while limit is not implemented
+  /*
+  it('should give the count of events that match the given source and tags with limit set', async () => {
+    const limit = 2
+    const expectedResult: actyxFunc.TaggedQueryResult = {
+      eventCount: limit,
+      finalOffset: limit - 1,
+    }
+    const allEventsOffsetMap = getOffsetMapForTestPond(numberOfEventsPerSource, numberOfSources)
+    console.log(JSON.stringify(allEventsOffsetMap))
+
+    const queryResult = await actyxFunc.getCountAndOffsetOfEventsMatchingTags(
+      allEventsOffsetMap,
+      `source_${targetSource}`,
+      MOCK_TAGS,
+      alternatingSourceTestPond,
+      limit,
+    )
+    expect(queryResult).toEqual(expectedResult)
+  })
+  */
+})
+
 function getTestEvents(): ActyxEvent[] {
   const events: ActyxEvent[] = []
   events.push(createTestEvent({ eventType: 'stateOneToTwo' }))
@@ -220,7 +275,7 @@ function createAlternatingSourceTestPond(
         stream: `source_${j}`,
         timestamp: BASE_DATE + globalEventCount,
         lamport: globalEventCount,
-        tags: ['mock_tag'],
+        tags: MOCK_TAGS,
         payload: i,
       }
       testPond.directlyPushEvents([event])
@@ -245,7 +300,7 @@ function createSequentialSourceTestPond(
           stream: `source_${i}`,
           timestamp: BASE_DATE + globalEventCount,
           lamport: globalEventCount,
-          tags: ['mock_tag'],
+          tags: MOCK_TAGS,
           payload: j,
         },
       ])
@@ -264,10 +319,26 @@ function createSingleSourceTestPond(numberOfEvents: number): Pond {
         stream: `source_0`,
         timestamp: BASE_DATE + i,
         lamport: i,
-        tags: ['mock_tag'],
+        tags: MOCK_TAGS,
         payload: i,
       },
     ])
   }
   return testPond
+}
+
+function getOffsetMapForTestPond(
+  numberOfEventsPerSource: number,
+  numberOfSources: number,
+): OffsetMap {
+  let allEventsOffsetMap = {}
+  const offsetOfSources = numberOfEventsPerSource - 1
+  for (let i = 0; i < numberOfSources; i++) {
+    allEventsOffsetMap = actyxFunc.upsertOffsetMapValue(
+      allEventsOffsetMap,
+      `source_${i}`,
+      offsetOfSources,
+    )
+  }
+  return allEventsOffsetMap
 }
