@@ -11,11 +11,6 @@ export const QUERY_CHUNK_SIZE = 5000
  */
 export type RelativeTiming = 'beforeRange' | 'withinRange' | 'afterRange'
 
-export type TaggedQueryResult = {
-  eventCount: number
-  finalOffset: Offset
-}
-
 /**
  * Checks whether a timestamp is inside, before or after a timerange defined by a lower bound and an upper bound.
  * @param timestampMicros Timestamp to compare in micros
@@ -124,22 +119,22 @@ export async function getActyxEventByOffset(
 }
 
 /**
- * TODO: Finish Documentation
- * @param offsets
- * @param sid
- * @param tags
- * @param pond
- * @returns
+ * Gets the amount of events of one specific stream that match the given tags.
+ * Will run a query on the Actyx pond.
+ * @param offsets Offset boundaries for the query. Will only count events that are with the offset boundaries.
+ * @param sid Only events of the stream with this sid will be counted.
+ * @param tags Only events that match these tags will be counted.
+ * @param pond The pond from which the events are taken
+ * @returns The amount of events matching the criteria.
  */
-export async function getCountAndOffsetOfEventsMatchingTags(
+export async function getCountOfEventsMatchingTags(
   offsets: OffsetMap,
   sid: string,
   tags: Tags<any>,
   pond: Pond,
-): Promise<TaggedQueryResult> {
-  return new Promise<TaggedQueryResult>((resolve) => {
+): Promise<number> {
+  return new Promise<number>((resolve) => {
     let eventCount = 0
-    let finalOffset = -1
     const filterForOneSource = { [sid]: offsets[sid] }
     const cancelQuerySubscription = pond.events().queryKnownRangeChunked(
       { query: tags, upperBound: filterForOneSource },
@@ -147,27 +142,40 @@ export async function getCountAndOffsetOfEventsMatchingTags(
       (eventChunk) => {
         const chunkLength = eventChunk.events.length
         eventCount += chunkLength
-        finalOffset = eventChunk.events[chunkLength - 1].meta.offset
       },
       () => {
         cancelQuerySubscription()
-        resolve({ eventCount: eventCount, finalOffset: finalOffset })
+        resolve(eventCount)
       },
     )
   })
 }
 
-export async function getOffsetByContextualOffset(
-  allEvents: OffsetMap,
-  contextualOffset: Offset,
+/**
+ * Converts a taggedOffset into an actual Offset.
+ * You can read about the difference between taggedOffsets and actual Offsets
+ * in the documentation of TaggedOffsetMap.
+ * The source stream and the tags for the taggedOffset need to be specified.
+ * Will run a query on the Actyx pond.
+ * @param offsets Offsets which dictate the range of events that are included
+ * Use pond.events().present() if you wish to include all known events.
+ * @param taggedOffset The taggedOffset you wish to convert into an actual offset.
+ * @param sid The sid of the stream this taggedOffset refers to.
+ * @param tags The set of tags this taggedOffset refers to.
+ * @param pond The pond from which the events are taken
+ * @returns The actual offset.
+ */
+export async function getOffsetByTaggedOffset(
+  offsets: OffsetMap,
+  taggedOffset: Offset,
   sid: string,
   tags: Tags<any>,
   pond: Pond,
 ): Promise<Offset> {
   return new Promise<Offset>((resolve, reject) => {
     let eventCount = 0
-    if (contextualOffset == -1) resolve(-1)
-    const filterForOneSource = { [sid]: allEvents[sid] }
+    if (taggedOffset == -1) resolve(-1)
+    const filterForOneSource = { [sid]: offsets[sid] }
     const cancelQuerySubscription = pond.events().queryKnownRangeChunked(
       { query: tags, upperBound: filterForOneSource },
       QUERY_CHUNK_SIZE,
@@ -175,29 +183,29 @@ export async function getOffsetByContextualOffset(
         const chunkLength = eventChunk.events.length
         eventCount += chunkLength
         console.log(
-          `getOffsetByContextualOffset - eventCount: ${eventCount}, contextualOffset: ${contextualOffset}`,
+          `getOffsetByTaggedOffset - eventCount: ${eventCount}, taggedOffset: ${taggedOffset}`,
         )
-        if (eventCount >= contextualOffset + 1) {
-          const surplusOfEventsInChunk = eventCount - (contextualOffset + 1)
-          const indexOfEventMatchingContextualOffset = chunkLength - 1 - surplusOfEventsInChunk
-          if (eventChunk.events[indexOfEventMatchingContextualOffset] === undefined) {
-            reject('query was unsuccessful due to an index being out of bounds')
+        if (eventCount >= taggedOffset + 1) {
+          const surplusOfEventsInChunk = eventCount - (taggedOffset + 1)
+          const indexOfEventMatchingTaggedOffset = chunkLength - 1 - surplusOfEventsInChunk
+          if (eventChunk.events[indexOfEventMatchingTaggedOffset] === undefined) {
+            reject('Query was unsuccessful due to an index being out of bounds')
             return
           }
           console.log(
-            `getOffsetByContextualOffset - index: ${indexOfEventMatchingContextualOffset}, chunk: ${JSON.stringify(
+            `getOffsetByTaggedOffset - index: ${indexOfEventMatchingTaggedOffset}, chunk: ${JSON.stringify(
               eventChunk,
             )}`,
           )
           const offsetOfFinalEventWithinLimit =
-            eventChunk.events[indexOfEventMatchingContextualOffset].meta.offset
+            eventChunk.events[indexOfEventMatchingTaggedOffset].meta.offset
 
           resolve(offsetOfFinalEventWithinLimit)
         }
       },
       () => {
         cancelQuerySubscription()
-        reject('query was unsuccessful')
+        reject('Query was unsuccessful because of an offset mismatch')
       },
     )
   })
@@ -207,7 +215,7 @@ export async function getOffsetByContextualOffset(
  * Searches the events in your pond for the single event which
  * happened directly prior to the given timestamp
  * @param offsets Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
+ * Use pond.events().present() if you wish to include all known events.
  * @param sid This function will only include events in the search that come from this source
  * @param timestampMicros Timestamp for which you search the event that happened prior
  * @param pond The pond from which the events are taken
@@ -263,15 +271,15 @@ export async function getLastEventOffsetBeforeTimestamp(
  * event that happened directly prior to determined timestamp. This function basically calls
  * getLastEventOffsetBeforeTimestamp for every source and returns the results as an offset map.
  * @param sid sid of the source which the other sources shall be synced with
- * @param allEvents Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
+ * @param offsets Offsets which dictate the range of events that are included
+ * Use pond.events().present() if you wish to include all known events.
  * @param pond The pond from which the events are taken
  * @returns Offset map with offsets that match the constraints described above
  */
 export async function syncOffsetMapOnSource(
   sid: string,
   offsetOfSid: number,
-  allEvents: OffsetMap,
+  offsets: OffsetMap,
   pond: Pond,
 ): Promise<OffsetMap> {
   let lastSelectedEventFromSource
@@ -280,7 +288,7 @@ export async function syncOffsetMapOnSource(
     lastSelectedEventFromSource = await getActyxEventByOffset(sid, offsetOfSid, pond)
     syncTimestamp = lastSelectedEventFromSource.meta.timestampMicros
   } catch (__error) {}
-  return await syncOffsetMapOnTimestamp(syncTimestamp, allEvents, pond)
+  return await syncOffsetMapOnTimestamp(syncTimestamp, offsets, pond)
 }
 
 /**
@@ -289,7 +297,7 @@ export async function syncOffsetMapOnSource(
  * getLastEventOffsetBeforeTimestamp for every source and returns the results as an offset map.
  * @param timestampMicros Timestamp for which you search the events that happened prior
  * @param offsets Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
+ * Use pond.events().present() if you wish to include all known events.
  * @param pond The pond from which the events are taken
  * @returns Offset map with offsets that match the constraints described above
  */
