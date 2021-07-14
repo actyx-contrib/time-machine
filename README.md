@@ -13,7 +13,7 @@ Actyx Time Machine is a graphical tool which aims to help developers troubleshoo
 
 - Clone this repository (verify that you have cloned the desired branch!)
 
-- Copy any sources you need to create your fishes into the Actyx Time Machine project. You may add additional dependencies if your your fishes require them.
+- Copy any sources you need to create your fishes into the Actyx Time Machine project. You may add additional dependencies if your fishes require them.
 
 - Execute `npm install` to install all needed dependencies.
 
