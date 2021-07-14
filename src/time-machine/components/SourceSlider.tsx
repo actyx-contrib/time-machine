@@ -97,7 +97,7 @@ export function SourceSlider({
                   onChange={(event) => {
                     onSyncCheckboxChanged(event.target.checked)
                   }}
-                  disabled={disabled}
+                  disabled={true /*disabled*/} //TODO: Reenable when ready
                   color="primary"
                   inputProps={{ 'aria-label': 'primary checkbox' }}
                 />

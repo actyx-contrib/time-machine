@@ -157,24 +157,47 @@ export async function getCountAndOffsetOfEventsMatchingTags(
   })
 }
 
-export async function reduceEventsMatching(
+export async function getOffsetByContextualOffset(
   allEvents: OffsetMap,
+  contextualOffset: Offset,
   sid: string,
-  tags: string[],
+  tags: Tags<any>,
   pond: Pond,
-): Promise<number> {
-  return new Promise<number>((resolve) => {
+): Promise<Offset> {
+  return new Promise<Offset>((resolve, reject) => {
     let eventCount = 0
+    if (contextualOffset == -1) resolve(-1)
     const filterForOneSource = { [sid]: allEvents[sid] }
     const cancelQuerySubscription = pond.events().queryKnownRangeChunked(
-      { query: Tags(...tags), upperBound: filterForOneSource },
+      { query: tags, upperBound: filterForOneSource },
       QUERY_CHUNK_SIZE,
       (eventChunk) => {
-        eventCount += eventChunk.events.length
+        const chunkLength = eventChunk.events.length
+        eventCount += chunkLength
+        console.log(
+          `getOffsetByContextualOffset - eventCount: ${eventCount}, contextualOffset: ${contextualOffset}`,
+        )
+        if (eventCount >= contextualOffset + 1) {
+          const surplusOfEventsInChunk = eventCount - (contextualOffset + 1)
+          const indexOfEventMatchingContextualOffset = chunkLength - 1 - surplusOfEventsInChunk
+          if (eventChunk.events[indexOfEventMatchingContextualOffset] === undefined) {
+            reject('query was unsuccessful due to an index being out of bounds')
+            return
+          }
+          console.log(
+            `getOffsetByContextualOffset - index: ${indexOfEventMatchingContextualOffset}, chunk: ${JSON.stringify(
+              eventChunk,
+            )}`,
+          )
+          const offsetOfFinalEventWithinLimit =
+            eventChunk.events[indexOfEventMatchingContextualOffset].meta.offset
+
+          resolve(offsetOfFinalEventWithinLimit)
+        }
       },
       () => {
         cancelQuerySubscription()
-        resolve(eventCount)
+        reject('query was unsuccessful')
       },
     )
   })

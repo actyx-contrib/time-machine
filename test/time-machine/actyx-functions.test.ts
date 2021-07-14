@@ -228,26 +228,22 @@ describe('getCountOfAllEventsMatchingTags', () => {
     expect(queryResult).toEqual(expectedResult)
   })
   //Commented out while limit is not implemented
-  /*
-  it('should give the count of events that match the given source and tags with limit set', async () => {
-    const limit = 2
-    const expectedResult: actyxFunc.TaggedQueryResult = {
-      eventCount: limit,
-      finalOffset: limit - 1,
-    }
-    const allEventsOffsetMap = getOffsetMapForTestPond(numberOfEventsPerSource, numberOfSources)
-    console.log(JSON.stringify(allEventsOffsetMap))
 
-    const queryResult = await actyxFunc.getCountAndOffsetOfEventsMatchingTags(
+  it('should give the count of events that match the given source and tags with limit set', async () => {
+    const contextualOffset = 2
+    const expectedResult = contextualOffset
+
+    const allEventsOffsetMap = getOffsetMapForTestPond(numberOfEventsPerSource, numberOfSources)
+
+    const queryResult = await actyxFunc.getOffsetByContextualOffset(
       allEventsOffsetMap,
+      contextualOffset,
       `source_${targetSource}`,
-      MOCK_TAGS,
+      Tags(...MOCK_TAGS),
       alternatingSourceTestPond,
-      limit,
     )
     expect(queryResult).toEqual(expectedResult)
   })
-  */
 })
 
 function getTestEvents(): ActyxEvent[] {
