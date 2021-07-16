@@ -1,10 +1,14 @@
 import { ActyxEvent, Fish, OffsetMap, Pond, Tags } from '@actyx/pond'
 import * as actyxFunc from '../../src/time-machine/actyx-functions'
+import { BASE_DATE, MOCK_TAGS } from './pond-utils'
+import {
+  createAlternatingSourceTestPond,
+  createSingleSourceTestPond,
+  getOffsetMapForTestPond,
+  createTestEvent,
+} from './pond-utils'
 import { mkTestFish } from './test-fish/test-fish'
 import { TestFishEvent, TestFishState } from './test-fish/types'
-
-const BASE_DATE = 10000
-const MOCK_TAGS = ['mock_tag']
 
 describe('Tags - String converters', () => {
   it('should be reversible', () => {
@@ -249,89 +253,4 @@ function getTestEvents(): ActyxEvent[] {
   events.push(createTestEvent({ eventType: 'stateTwoToThree' }))
 
   return events
-}
-
-function createTestEvent(payload: TestFishEvent, meta?): ActyxEvent {
-  return { meta: meta, payload: payload }
-}
-
-function createAlternatingSourceTestPond(
-  numberOfEventsPerSource: number,
-  numberOfSources: number,
-): Pond {
-  const testPond = Pond.test()
-  let globalEventCount = 0
-  for (let i = 0; i < numberOfEventsPerSource; i++) {
-    for (let j = 0; j < numberOfSources; j++) {
-      const event = {
-        offset: i,
-        stream: `source_${j}`,
-        timestamp: BASE_DATE + globalEventCount,
-        lamport: globalEventCount,
-        tags: MOCK_TAGS,
-        payload: i,
-      }
-      testPond.directlyPushEvents([event])
-      globalEventCount++
-    }
-  }
-  return testPond
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function createSequentialSourceTestPond(
-  numberOfEventsPerSource: number,
-  numberOfSources: number,
-): Pond {
-  const testPond = Pond.test()
-  let globalEventCount = 0
-  for (let i = 0; i < numberOfSources; i++) {
-    for (let j = 0; j < numberOfEventsPerSource; j++) {
-      testPond.directlyPushEvents([
-        {
-          offset: j,
-          stream: `source_${i}`,
-          timestamp: BASE_DATE + globalEventCount,
-          lamport: globalEventCount,
-          tags: MOCK_TAGS,
-          payload: j,
-        },
-      ])
-      globalEventCount++
-    }
-  }
-  return testPond
-}
-
-function createSingleSourceTestPond(numberOfEvents: number): Pond {
-  const testPond = Pond.test()
-  for (let i = 0; i < numberOfEvents; i++) {
-    testPond.directlyPushEvents([
-      {
-        offset: i,
-        stream: `source_0`,
-        timestamp: BASE_DATE + i,
-        lamport: i,
-        tags: MOCK_TAGS,
-        payload: i,
-      },
-    ])
-  }
-  return testPond
-}
-
-function getOffsetMapForTestPond(
-  numberOfEventsPerSource: number,
-  numberOfSources: number,
-): OffsetMap {
-  let allEventsOffsetMap = {}
-  const offsetOfSources = numberOfEventsPerSource - 1
-  for (let i = 0; i < numberOfSources; i++) {
-    allEventsOffsetMap = actyxFunc.upsertOffsetMapValue(
-      allEventsOffsetMap,
-      `source_${i}`,
-      offsetOfSources,
-    )
-  }
-  return allEventsOffsetMap
 }

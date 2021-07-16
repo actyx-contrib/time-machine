@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CancelSubscription, Fish, OffsetMap } from '@actyx/pond'
+import { CancelSubscription, Fish, OffsetMap, Pond } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import {
   Typography,
@@ -12,7 +12,7 @@ import {
   Checkbox,
   FormControlLabel,
 } from '@material-ui/core'
-import fishes from './fishes'
+import { fishes } from './fishes'
 import { TaggedOffsetMap } from './types'
 import {
   upsertOffsetMapValue,
