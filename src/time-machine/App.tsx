@@ -32,7 +32,9 @@ import { TagsSelection } from './components/TagsSelection'
 import { dependencies } from '../../package-lock.json'
 import { CustomTooltip } from './components/CustomTooltip'
 
-const ACTYX_REFRESH_INTERVAL = 10000
+//import Actyx Refresh Interval from package.json
+const configRefreshInterval = process.env.npm_package_config_actyxPondRefreshInterval
+const ACTYX_REFRESH_INTERVAL = configRefreshInterval ? parseInt(configRefreshInterval) : 10000
 
 const sm_size = 12
 const md_size = 6

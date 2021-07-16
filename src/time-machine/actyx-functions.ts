@@ -1,9 +1,11 @@
 import { ActyxEvent, EventsSortOrder, OffsetMap, Pond, Tags, Where } from '@actyx/pond'
 
+//import Actyx Query Chunk Size from package.json
+const configQueryChunkSize = process.env.npm_package_config_actyxPondQueryChunkSize
 /**
  * Chunk size for all chunk-based queries
  */
-const QUERY_CHUNK_SIZE = 5000
+const QUERY_CHUNK_SIZE = configQueryChunkSize ? parseInt(configQueryChunkSize) : 500
 
 /**
  * Type that describes the relative timeliness
