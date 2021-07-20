@@ -36,7 +36,7 @@ export function SourceSlider({
   }, [numberOfSelectedEvents])
 
   return (
-    <Grid key={sid} item container xs={12} spacing={2}>
+    <Grid key={sid} item container xs={12} spacing={2} data-testid="source-slider-container">
       <Grid item xs={9} container spacing={2}>
         <Grid item xs={6}>
           <Typography
@@ -47,7 +47,8 @@ export function SourceSlider({
               overflow: 'hidden',
             }}
           >
-            {sid} <br />({sliderValue}/{numberOfAllEvents})
+            {sid} <br />
+            {`(${sliderValue}/${numberOfAllEvents})`}
           </Typography>
         </Grid>
         <Grid item xs={6}>

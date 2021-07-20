@@ -3,13 +3,15 @@
  */
 import React from 'react'
 import { App } from '../../src/time-machine/App'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { mkTestFish } from './test-fish/test-fish'
 import { Pond } from '@actyx/pond'
+import { addEventsToTestPond } from './pond-utils'
+import { SliderUtil } from './material-ui-utils'
 
 // Inject testing pond into the application
-const mockPond = Pond.test()
+const mockPond = getTestPondWithTestFishEvents()
 jest.mock('@actyx-contrib/react-pond', () => ({
   usePond: () => {
     return mockPond
@@ -24,13 +26,50 @@ jest.mock('../../src/time-machine/fishes', () => ({
   },
 }))
 
-test('Application passes the loading phase and renders the actual UI', async () => {
+test('Application successfully loads and shows event sources for the imported test-fish', async () => {
   render(<App />)
+
+  //Application has loaded (received response from the pond)
   expect(await screen.findByText('Actyx Time Machine')).toBeInTheDocument()
+
+  //Test-Fish was imported and tags are correct
+  expect(await screen.findByText("'test-fish' & 'test-fish:test-fish_1'")).toBeInTheDocument()
+
+  //Events that match the tags of the fish were found and a source slider is rendered
+  const sourceSliderContainer = await screen.findByTestId('source-slider-container')
+  const sourceSlider = await within(sourceSliderContainer).findByRole('slider')
+  expect(sourceSlider).toBeInTheDocument()
+
+  //Finding the "Select all events (no time limit)" checkbox and checking that it's there
+  const noTimeLimitCheckboxContainer = await screen.findByTestId('time-slider-container')
+  const noTimeLimitCheckbox = await within(noTimeLimitCheckboxContainer).findByRole('checkbox')
+  expect(noTimeLimitCheckbox).toBeInTheDocument()
+
+  //Correct amount of events was determined
+  expect(
+    await within(sourceSliderContainer).findByText('(0/0)', { exact: false }),
+  ).toBeInTheDocument()
+
+  //Making all events available by clicking "Select all events (no time limit)"
+  fireEvent.click(noTimeLimitCheckbox)
+
+  //Now all events should be available
+  expect(
+    await within(sourceSliderContainer).findByText('(0/2)', { exact: false }),
+  ).toBeInTheDocument()
+
+  //Selecting 2/2 events
+  SliderUtil.setValue(sourceSlider, 2, 0, 2)
+
+  expect(
+    await within(sourceSliderContainer).findByText('(2/2)', { exact: false }),
+  ).toBeInTheDocument()
 })
 
-test('Fish is correctly imported and selectable', async () => {
-  render(<App />)
-  expect(await screen.findByText("'test-fish' & 'test-fish:test-fish_1'")).toBeInTheDocument()
-  //expect(await screen.findByText('test_fish_1')).toBeInTheDocument()
-})
+function getTestPondWithTestFishEvents(): Pond {
+  const testPond = Pond.test()
+  const eventPayloads = [{ eventType: 'stateOneToTwo' }, { eventType: 'stateTwoToThree' }]
+  const tags = ['test-fish', 'test-fish:test-fish_1']
+  addEventsToTestPond(eventPayloads, 0, 0, tags, 'stream_0', testPond)
+  return testPond
+}
