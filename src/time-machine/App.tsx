@@ -536,7 +536,7 @@ export function App(): JSX.Element {
         pond,
       )
       const taggedOffsetForSid = countOfEventsMatchingTagsForSid - 1
-      console.log(`updateTagged sid ${sid}, newOffset ${taggedOffsetForSid}`)
+      //console.log(`updateTagged sid ${sid}, newOffset ${taggedOffsetForSid}`)
       newOffsets = upsertOffsetMapValue(newOffsets, sid, taggedOffsetForSid)
     }
     setSelectableEventsTaggedOffsets(newOffsets)

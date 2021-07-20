@@ -1,4 +1,4 @@
-import { ActyxEvent, OffsetMap, Pond } from '@actyx/pond'
+import { ActyxEvent, OffsetMap, Pond, TestPond } from '@actyx/pond'
 import * as actyxFunc from '../../src/time-machine/actyx-functions'
 import { TestFishEvent } from './test-fish/types'
 
@@ -84,4 +84,28 @@ export function getOffsetMapForTestPond(
     )
   }
   return allEventsOffsetMap
+}
+
+export function addEventsToTestPond(
+  eventPayloads: any[],
+  startingOffset: number,
+  startingLamport: number,
+  tags: string[],
+  stream: string,
+  testPond: TestPond,
+): void {
+  for (let i = 0; i < eventPayloads.length; i++) {
+    const offset = startingOffset + i
+    const lamport = startingLamport + i
+    testPond.directlyPushEvents([
+      {
+        offset: offset,
+        stream: stream,
+        timestamp: BASE_DATE + lamport,
+        lamport: lamport,
+        tags: tags,
+        payload: eventPayloads[i],
+      },
+    ])
+  }
 }

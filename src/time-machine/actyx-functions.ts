@@ -1,4 +1,13 @@
-import { ActyxEvent, EventsSortOrder, Offset, OffsetMap, Pond, Tags, Where } from '@actyx/pond'
+import {
+  ActyxEvent,
+  CancelSubscription,
+  EventsSortOrder,
+  Offset,
+  OffsetMap,
+  Pond,
+  Tags,
+  Where,
+} from '@actyx/pond'
 
 /**
  * Chunk size for all chunk-based queries
@@ -134,20 +143,25 @@ export async function getCountOfEventsMatchingTags(
   pond: Pond,
 ): Promise<number> {
   return new Promise<number>((resolve) => {
-    let eventCount = 0
+    let cancelQuerySubscription: CancelSubscription
     const filterForOneSource = { [sid]: offsets[sid] }
-    const cancelQuerySubscription = pond.events().queryKnownRangeChunked(
-      { query: tags, upperBound: filterForOneSource },
-      QUERY_CHUNK_SIZE,
-      (eventChunk) => {
-        const chunkLength = eventChunk.events.length
-        eventCount += chunkLength
-      },
-      () => {
-        cancelQuerySubscription()
-        resolve(eventCount)
-      },
-    )
+    new Promise<number>(() => {
+      let eventCount = 0
+      cancelQuerySubscription = pond.events().queryKnownRangeChunked(
+        { query: tags, upperBound: filterForOneSource },
+        QUERY_CHUNK_SIZE,
+        (eventChunk) => {
+          const chunkLength = eventChunk.events.length
+          eventCount += chunkLength
+        },
+        () => {
+          resolve(eventCount)
+        },
+      )
+    }).then((resolvedEventCount) => {
+      cancelQuerySubscription()
+      resolve(resolvedEventCount)
+    })
   })
 }
 
@@ -192,11 +206,6 @@ export async function getOffsetByTaggedOffset(
             reject('Query was unsuccessful due to an index being out of bounds')
             return
           }
-          console.log(
-            `getOffsetByTaggedOffset - index: ${indexOfEventMatchingTaggedOffset}, chunk: ${JSON.stringify(
-              eventChunk,
-            )}`,
-          )
           const offsetOfFinalEventWithinLimit =
             eventChunk.events[indexOfEventMatchingTaggedOffset].meta.offset
 

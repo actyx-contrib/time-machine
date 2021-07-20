@@ -36,7 +36,7 @@ export function SourceSlider({
   }, [numberOfSelectedEvents])
 
   return (
-    <Grid key={sid} container spacing={1}>
+    <Grid key={sid} container spacing={1} data-testid="source-slider-container">
       <Grid item xs={9}>
         <FormControl fullWidth>
           <FormControlLabel
@@ -59,7 +59,8 @@ export function SourceSlider({
             }
             label={
               <Typography>
-                {sid} <br />({sliderValue}/{numberOfAllEvents})
+                {sid} <br />
+                {`(${sliderValue}/${numberOfAllEvents})`}
               </Typography>
             }
           />
