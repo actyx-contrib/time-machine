@@ -36,7 +36,7 @@ const script = `import { Fish } from '@actyx/pond'
 
 import Fishes from '${userFishImportPath}'
 
-export default function fishes(): Fish<any, any>[] {
+export function fishes(): Fish<any, any>[] {
     return Fishes()
 }
 `
