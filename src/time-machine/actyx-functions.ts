@@ -292,11 +292,8 @@ export function reduceTwinStateFromEvents(
  * @returns Actyx-Tags
  */
 export function tagsFromString(tags: string): Tags<unknown> {
-  try {
-    return Tags(...(tags || 'unknown').split(' '))
-  } catch (exception) {
-    return Tags('unknown')
-  }
+  const tagArray = tags.match(/[^ ]+/g)
+  return Tags(...(tagArray || 'unknown'))
 }
 /**
  * Joins the tags of your 'Where' into a string, separated by blank spaces.

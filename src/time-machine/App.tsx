@@ -87,6 +87,8 @@ export function App(): JSX.Element {
   const [currentFishState, setCurrentFishState] = useState({})
   const [previousFishState, setPreviousFishState] = useState({})
 
+  const calculating = calculatingFishState || calculatingOffsetLimits || calculatingSync
+
   //Look for new event offsets every x nanoseconds
 
   React.useEffect(() => {
@@ -173,7 +175,7 @@ export function App(): JSX.Element {
           </Typography>
         </Grid>
         <Grid item xs={4}>
-          {isCalculating() ? (
+          {calculating ? (
             <Grid item>
               <CircularProgress style={{ paddingTop: '20px' }} />
             </Grid>
@@ -208,7 +210,7 @@ export function App(): JSX.Element {
                 <FormControl>
                   <InputLabel>Select from imported fishes</InputLabel>
                   <Select
-                    disabled={isCalculating()}
+                    disabled={calculating}
                     value={selectedFishIndex}
                     onChange={(event) => {
                       setSelectedFishIndex(event.target.value as number)
@@ -245,7 +247,7 @@ export function App(): JSX.Element {
               </Grid>
               <Grid item xs={10}>
                 <TagsSelection
-                  disabled={isCalculating()}
+                  disabled={calculating}
                   error={!(earliestEventMicros && latestEventMicros)}
                   selectedTags={selectedTags}
                   onChange={setSelectedTags}
@@ -273,7 +275,7 @@ export function App(): JSX.Element {
                   selectedTimeLimitMicros={selectedTimeLimitMicros}
                   earliestEventMicros={earliestEventMicros}
                   latestEventMicros={latestEventMicros}
-                  disabled={isCalculating()}
+                  disabled={calculating}
                   allEventsSelected={selectAllEventsChecked}
                   onSelectAllEventsCheckedChanged={(checked) => {
                     if (!checked) {
@@ -325,7 +327,7 @@ export function App(): JSX.Element {
                                 }
                                 setKeepUpWithNewEventsChecked(event.target.checked)
                               }}
-                              disabled={isCalculating()}
+                              disabled={calculating}
                               color="primary"
                             />
                           }
@@ -340,7 +342,7 @@ export function App(): JSX.Element {
                           {Object.entries(selectableEvents).map(([sid, events]) => {
                             const disabledBySyncLock =
                               !selectedSyncCheckboxesMap[sid] && syncChecked
-                            const disabledByCalculatingLock = isCalculating()
+                            const disabledByCalculatingLock = calculating
                             const disabled =
                               disabledByCalculatingLock ||
                               disabledBySyncLock ||
@@ -438,20 +440,14 @@ export function App(): JSX.Element {
     const initialState = importedFishes[selectedFishIndex].initialState
     let fishStates = { previousState: {}, currentState: initialState }
     let lastAppliedEvent = {}
-    let run = false
-
     await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
-      run = true
       fishStates = reduceTwinStateFromEvents(
         events,
         importedFishes[selectedFishIndex].onEvent,
         fishStates.currentState,
       )
       lastAppliedEvent = events[events.length - 1]
-      console.log(`Inside callback ${JSON.stringify(fishStates)}`)
     })
-
-    console.log(`Outside callback ${JSON.stringify(fishStates)}. Callback run? ${run}`)
     setPreviousFishState(fishStates.previousState)
     setCurrentFishState(fishStates.currentState)
     setRecentEvent(lastAppliedEvent)
@@ -495,9 +491,5 @@ export function App(): JSX.Element {
       }
     }
     setSelectedEvents(newOffsets)
-  }
-
-  function isCalculating(): boolean {
-    return calculatingFishState || calculatingOffsetLimits || calculatingSync
   }
 }
