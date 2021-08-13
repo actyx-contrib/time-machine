@@ -15,7 +15,9 @@
     "import-fishes": "node import-fishes.js"
   },
   "config": {
-    "fishesfile": "./example-fishes.ts"
+    "fishesFile": "./example-fishes.ts",
+    "actyxPondRefreshInterval": 10000,
+    "actyxPondQueryChunkSize": 500
   },
   "keywords": [],
   "author": "",

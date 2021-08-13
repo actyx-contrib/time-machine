@@ -9,10 +9,12 @@ import {
   Where,
 } from '@actyx/pond'
 
+//import Actyx Query Chunk Size from package.json
+const configQueryChunkSize = process.env.npm_package_config_actyxPondQueryChunkSize
 /**
  * Chunk size for all chunk-based queries
  */
-export const QUERY_CHUNK_SIZE = 5000
+const QUERY_CHUNK_SIZE = configQueryChunkSize ? parseInt(configQueryChunkSize) : 500
 
 /**
  * Type that describes the relative timeliness
@@ -397,11 +399,8 @@ export function reduceTwinStateFromEvents(
  * @returns Actyx-Tags
  */
 export function tagsFromString(tags: string): Tags<unknown> {
-  try {
-    return Tags(...(tags || 'unknown').split(' '))
-  } catch (exception) {
-    return Tags('unknown')
-  }
+  const tagArray = tags.match(/[^ ]+/g)
+  return Tags(...(tagArray || 'unknown'))
 }
 /**
  * Joins the tags of your 'Where' into a string, separated by blank spaces.

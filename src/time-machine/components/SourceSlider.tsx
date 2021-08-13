@@ -36,35 +36,36 @@ export function SourceSlider({
   }, [numberOfSelectedEvents])
 
   return (
-    <Grid key={sid} container spacing={1} data-testid="source-slider-container">
-      <Grid item xs={9}>
-        <FormControl fullWidth>
-          <FormControlLabel
-            labelPlacement="start"
-            control={
-              <Slider
-                style={{ maxWidth: 350, minWidth: 100 }}
-                value={sliderValue}
-                min={0}
-                max={numberOfAllEvents}
-                disabled={disabled}
-                onChange={(_event, value) => {
-                  setSliderValue(+value)
-                }}
-                onChangeCommitted={(_event, value) => {
-                  onEventsChanged(+value)
-                }}
-                aria-labelledby="continuous-slider"
-              />
-            }
-            label={
-              <Typography>
-                {sid} <br />
-                {`(${sliderValue}/${numberOfAllEvents})`}
-              </Typography>
-            }
+    <Grid key={sid} item container xs={12} spacing={2} data-testid="source-slider-container">
+      <Grid item xs={9} container spacing={2}>
+        <Grid item xs={6}>
+          <Typography
+            title={sid}
+            style={{
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+              overflow: 'hidden',
+            }}
+          >
+            {sid} <br />({sliderValue}/{numberOfAllEvents})
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Slider
+            style={{ minWidth: 100 }}
+            value={sliderValue}
+            min={0}
+            max={numberOfAllEvents}
+            disabled={disabled}
+            onChange={(_event, value) => {
+              setSliderValue(+value)
+            }}
+            onChangeCommitted={(_event, value) => {
+              onEventsChanged(+value)
+            }}
+            aria-labelledby="continuous-slider"
           />
-        </FormControl>
+        </Grid>
       </Grid>
 
       <Grid item xs={1}>

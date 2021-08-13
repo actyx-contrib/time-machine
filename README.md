@@ -29,12 +29,11 @@ export default function (): Fish<any, any>[] {
 }
 ```
 
-- Edit the `package.json` file of the time machine so that the config entry `fishesfile` points towards your newly created file. You may also edit the entry `pondurl`, if you want to connect to an ActyxOS instance that is not running on your localhost. Please note that ActyxOS does not allow access to the pond by external hosts by default.
+- Edit the `package.json` file of the time machine so that the config entry `fishesfile` points towards your newly created file.
 
 ```json
 "config": {
     "fishesfile": "./your-file.ts",
-    "pondurl": "ws://localhost:4243/store_api"
   },
 ```
 

@@ -11,9 +11,10 @@ import {
   CircularProgress,
   Checkbox,
   FormControlLabel,
+  Card,
+  CardContent,
 } from '@material-ui/core'
 import { fishes } from './fishes'
-import { TaggedOffsetMap } from './types'
 import {
   upsertOffsetMapValue,
   getLastEventOffsetBeforeTimestamp,
@@ -34,8 +35,11 @@ import { TagsSelection } from './components/TagsSelection'
 
 import { dependencies } from '../../package-lock.json'
 import { CustomTooltip } from './components/CustomTooltip'
+import { TaggedOffsetMap } from './types'
 
-const ACTYX_REFRESH_INTERVAL = 10000
+//import Actyx Refresh Interval from package.json
+const configRefreshInterval = process.env.npm_package_config_actyxPondRefreshInterval
+const ACTYX_REFRESH_INTERVAL = configRefreshInterval ? parseInt(configRefreshInterval) : 10000
 
 const sm_size = 12
 const md_size = 6
@@ -98,7 +102,10 @@ export function App(): JSX.Element {
   const [currentFishState, setCurrentFishState] = useState({})
   const [previousFishState, setPreviousFishState] = useState({})
 
-  //Look for new event offsets from the pond every x nanoseconds
+  const calculating = calculatingFishState || calculatingOffsetLimits || calculatingSync
+
+  //Look for new event offsets every x nanoseconds
+
   React.useEffect(() => {
     updateAllEventsOffsets()
     const refresh = setInterval(() => {
@@ -175,7 +182,7 @@ export function App(): JSX.Element {
           </Typography>
         </Grid>
         <Grid item xs={4}>
-          {isCalculating() ? (
+          {calculating ? (
             <Grid item>
               <CircularProgress style={{ paddingTop: '20px' }} />
             </Grid>
@@ -210,7 +217,7 @@ export function App(): JSX.Element {
                 <FormControl>
                   <InputLabel>Select from imported fishes</InputLabel>
                   <Select
-                    disabled={isCalculating()}
+                    disabled={calculating}
                     value={selectedFishIndex}
                     onChange={(event) => {
                       setSelectedFishIndex(event.target.value as number)
@@ -247,7 +254,7 @@ export function App(): JSX.Element {
               </Grid>
               <Grid item xs={10}>
                 <TagsSelection
-                  disabled={isCalculating()}
+                  disabled={calculating}
                   error={!(earliestEventMicros && latestEventMicros)}
                   selectedTags={selectedTags}
                   onChange={setSelectedTags}
@@ -312,79 +319,88 @@ export function App(): JSX.Element {
                   </Typography>
                 </CustomTooltip>
               </Grid>
-              <Grid item xs={12}>
+              <Grid item container xs={12}>
                 {earliestEventMicros && latestEventMicros ? (
                   <div>
-                    <FormControl fullWidth>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={keepUpWithNewEventsChecked}
-                            onChange={(event) => {
-                              if (event.target.checked) {
-                                setSelectAllEventsChecked(true)
-                              }
-                              setKeepUpWithNewEventsChecked(event.target.checked)
-                            }}
-                            disabled={true /*isCalculating()*/}
-                            color="primary"
-                          />
-                        }
-                        label={<Typography>Keep up with new events (live update)</Typography>}
-                      />
-                    </FormControl>
-                    {Object.entries(selectableEventsTaggedOffsets).map(([sid, events]) => {
-                      //Don't show slider in case the stream has so fitting events
-                      if (events === -1) {
-                        return
-                      }
-                      const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && syncChecked
-                      const disabledByCalculatingLock = isCalculating()
-                      const disabled =
-                        disabledByCalculatingLock ||
-                        disabledBySyncLock ||
-                        keepUpWithNewEventsChecked
-                      return (
-                        <SourceSlider
-                          sid={sid}
-                          numberOfSelectedEvents={selectedEventsTaggedOffsets[sid] + 1 || 0}
-                          numberOfAllEvents={events + 1}
-                          syncSelected={selectedSyncCheckboxesMap[sid] || false}
-                          onEventsChanged={(events) => {
-                            /*if (selectedSyncCheckboxesMap[sid]) {
-                              setCalculatingSync(true)
-                              syncOffsetMapOnSource(sid, events - 1, selectableEvents, pond).then(
-                                (value) => {
-                                  setSelectedEvents(value)
-                                  setCalculatingSync(false)
-                                },
-                              )
-                            } else {*/
-                            setSelectedEventsTaggedOffsets(
-                              upsertOffsetMapValue(selectedEventsTaggedOffsets, sid, events - 1),
-                            )
-                          }} //}
-                          onSyncCheckboxChanged={(checked) => {
-                            /*setSelectedSyncCheckbox({
-                              ...selectedSyncCheckboxesMap,
-                              [sid]: checked,
-                            })
-                            setSyncChecked(checked)
-                            if (checked) {
-                              syncOffsetMapOnSource(
-                                sid,
-                                offsetsOfSelectedEvents[sid],
-                                selectableEvents,
-                                pond,
-                              ).then(setOffsetsOfSelectedEvents)
-                            }
-                          */
-                          }}
-                          disabled={disabled}
-                          key={sid}
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={keepUpWithNewEventsChecked}
+                              onChange={(event) => {
+                                if (event.target.checked) {
+                                  setSelectAllEventsChecked(true)
+                                }
+                                setKeepUpWithNewEventsChecked(event.target.checked)
+                              }}
+                              disabled={calculating}
+                              color="primary"
+                            />
+                          }
+                          label={<Typography>Keep up with new events (live update)</Typography>}
                         />
-                      )
-                    })}
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item container xs={12}>
+                      <Card style={{ height: '22vh', overflowY: 'scroll' }}>
+                        <CardContent>
+                          {Object.entries(selectableEventsTaggedOffsets).map(([sid, events]) => {
+                            const disabledBySyncLock =
+                              !selectedSyncCheckboxesMap[sid] && syncChecked
+                            const disabledByCalculatingLock = calculating
+                            const disabled =
+                              disabledByCalculatingLock ||
+                              disabledBySyncLock ||
+                              keepUpWithNewEventsChecked
+                            return (
+                              <SourceSlider
+                                sid={sid}
+                                numberOfSelectedEvents={selectedEventsOffsets[sid] + 1 || 0}
+                                numberOfAllEvents={events + 1}
+                                syncSelected={selectedSyncCheckboxesMap[sid] || false}
+                                onEventsChanged={(events) => {
+                                  if (selectedSyncCheckboxesMap[sid]) {
+                                    setCalculatingSync(true)
+                                    syncOffsetMapOnSource(
+                                      sid,
+                                      events - 1,
+                                      selectableEventsTaggedOffsets,
+                                      pond,
+                                    ).then((value) => {
+                                      setSelectedEventsOffsets(value)
+                                      setCalculatingSync(false)
+                                    })
+                                  } else {
+                                    setSelectedEventsOffsets(
+                                      upsertOffsetMapValue(selectedEventsOffsets, sid, events - 1),
+                                    )
+                                  }
+                                }}
+                                onSyncCheckboxChanged={(checked) => {
+                                  setSelectedSyncCheckbox({
+                                    ...selectedSyncCheckboxesMap,
+                                    [sid]: checked,
+                                  })
+                                  setSyncChecked(checked)
+                                  if (checked) {
+                                    syncOffsetMapOnSource(
+                                      sid,
+                                      selectedEventsOffsets[sid],
+                                      selectableEventsTaggedOffsets,
+                                      pond,
+                                    ).then(setSelectedEventsOffsets)
+                                  }
+                                }}
+                                disabled={disabled}
+                                key={sid}
+                              />
+                            )
+                          })}
+                        </CardContent>
+                      </Card>
+                    </Grid>
                   </div>
                 ) : (
                   <TagsAlert tagsStatus={'noMatchingEvents'} />
@@ -573,7 +589,8 @@ export function App(): JSX.Element {
    * Limits selected events by updating selectedEventsTaggedOffsets when the max selectable events value
    * (stored in selectableEventsTaggedOffsets) has become lower than selected events value.
    */
-  /*function applyLimitOnSelectedEvents() {
+  /*
+  function applyLimitOnSelectedEvents() {
     let newOffsets = {}
     for (const [sid, events] of Object.entries(taggedOffsetsOfSelectableEvents)) {
       if (taggedOffsetsOfSelectedEvents[sid] > events) {
@@ -582,14 +599,7 @@ export function App(): JSX.Element {
         newOffsets = upsertOffsetMapValue(newOffsets, sid, taggedOffsetsOfSelectedEvents[sid])
       }
     }
-    setTaggedOffsetsOfSelectedEvents(newOffsets)
-  }*/
-
-  /**
-   *
-   * @returns
-   */
-  function isCalculating(): boolean {
-    return calculatingFishState || calculatingOffsetLimits || calculatingSync
+    setSelectedEvents(newOffsets)
   }
+  */
 }
