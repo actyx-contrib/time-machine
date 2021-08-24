@@ -40,7 +40,7 @@ export function compareTimestampWithTimeRange(
  * to the latest event in the pond within the given offsets (excluding the start boundary).
  * In the mathematical sense this determines if 'timestampMicros ∈ (firstEvent, lastEvent]'
  * @param offsets Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
+ * Use pond.events().present() if you wish to include all known events
  * @param sid This function will only include events that were emitted by this source
  * @param timestampMicros The timestamp you want to compare to the timerange
  * @param pond The pond from which the earliest and latest event is taken
@@ -81,7 +81,7 @@ export async function getEarliestActyxEventBySid(
 /**
  * Gets the latest event from your pond that was emitted by the given source
  * @param offsets Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
+ * Use pond.events().present() if you wish to include all known events
  * @param sid This function will only include events that were emitted by this source
  * @param pond The pond from which the events are taken
  * @returns The latest event from your pond that was emitted by the given source
@@ -124,7 +124,7 @@ export async function getActyxEventByOffset(
  * Searches the events in your pond for the single event which
  * happened directly prior to the given timestamp
  * @param offsets Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
+ * Use pond.events().present() if you wish to include all known events
  * @param sid This function will only include events in the search that come from this source
  * @param timestampMicros Timestamp for which you search the event that happened prior
  * @param pond The pond from which the events are taken
@@ -176,7 +176,7 @@ export async function getLastEventOffsetBeforeTimestamp(
  * getLastEventOffsetBeforeTimestamp for every source and returns the results as an offset map.
  * @param sid sid of the source which the other sources shall be synced with
  * @param allEvents Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
+ * Use pond.events().present() if you wish to include all known events
  * @param pond The pond from which the events are taken
  * @returns Offset map with offsets that match the constraints described above
  */
@@ -201,7 +201,7 @@ export async function syncOffsetMapOnSource(
  * getLastEventOffsetBeforeTimestamp for every source and returns the results as an offset map.
  * @param timestampMicros Timestamp for which you search the events that happened prior
  * @param offsets Offsets which dictate the range of events that are included
- * Use currentOffsets() if you wish to include all known events
+ * Use pond.events().present() if you wish to include all known events
  * @param pond The pond from which the events are taken
  * @returns Offset map with offsets that match the constraints described above
  */

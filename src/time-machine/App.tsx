@@ -61,9 +61,9 @@ export function App(): JSX.Element {
 
   const pond = usePond()
 
-  const [allEvents, setAllEvents] = useState<OffsetMap>()
-  const [selectableEvents, setSelectableEvents] = useState<OffsetMap>({})
-  const [selectedEvents, setSelectedEvents] = useState<OffsetMap>({})
+  const [allEventsOffsets, setAllEventsOffsets] = useState<OffsetMap>()
+  const [selectableEventsOffsets, setSelectableEventsOffsets] = useState<OffsetMap>({})
+  const [selectedEventsOffsets, setSelectedEventsOffsets] = useState<OffsetMap>({})
 
   const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
   const [latestEventMicros, setLatestEventMicros] = useState<number>()
@@ -92,9 +92,9 @@ export function App(): JSX.Element {
   //Look for new event offsets every x nanoseconds
 
   React.useEffect(() => {
-    pond.events().present().then(setAllEvents)
+    pond.events().present().then(setAllEventsOffsets)
     const refresh = setInterval(() => {
-      pond.events().present().then(setAllEvents)
+      pond.events().present().then(setAllEventsOffsets)
     }, ACTYX_REFRESH_INTERVAL)
     return () => {
       clearInterval(refresh)
@@ -108,10 +108,10 @@ export function App(): JSX.Element {
 
   //Reapply events on fishes after change of selected events
   React.useEffect(() => {
-    if (selectedEvents) {
+    if (selectedEventsOffsets) {
       updateFishStatesAndRecentEvent()
     }
-  }, [selectedEvents, selectedTags])
+  }, [selectedEventsOffsets, selectedTags])
 
   //Update tags when a new fish is selected by the user
   React.useEffect(() => {
@@ -121,24 +121,24 @@ export function App(): JSX.Element {
 
   //Update selectable events when time limit changes
   React.useEffect(() => {
-    if (!allEvents) return
+    if (!allEventsOffsets) return
 
     updateSelectableEvents()
-  }, [selectedTimeLimitMicros, selectAllEventsChecked, allEvents])
+  }, [selectedTimeLimitMicros, selectAllEventsChecked, allEventsOffsets])
 
   React.useEffect(() => {
-    if (!allEvents) return
+    if (!allEventsOffsets) return
     if (keepUpWithNewEventsChecked) {
-      setSelectedEvents(allEvents)
+      setSelectedEventsOffsets(allEventsOffsets)
     }
-  }, [allEvents, keepUpWithNewEventsChecked])
+  }, [allEventsOffsets, keepUpWithNewEventsChecked])
 
   //Update selected events when max selectable events changes
   React.useEffect(() => {
     applyLimitOnSelectedEvents()
-  }, [selectableEvents])
+  }, [selectableEventsOffsets])
 
-  if (!allEvents) {
+  if (!allEventsOffsets) {
     return <div>loading...</div>
   }
 
@@ -315,7 +315,7 @@ export function App(): JSX.Element {
                     <Grid item container xs={12}>
                       <Card style={{ height: '22vh', overflowY: 'scroll' }}>
                         <CardContent>
-                          {Object.entries(selectableEvents).map(([sid, events]) => {
+                          {Object.entries(selectableEventsOffsets).map(([sid, events]) => {
                             const disabledBySyncLock =
                               !selectedSyncCheckboxesMap[sid] && syncChecked
                             const disabledByCalculatingLock = calculating
@@ -326,7 +326,7 @@ export function App(): JSX.Element {
                             return (
                               <SourceSlider
                                 sid={sid}
-                                numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
+                                numberOfSelectedEvents={selectedEventsOffsets[sid] + 1 || 0}
                                 numberOfAllEvents={events + 1}
                                 syncSelected={selectedSyncCheckboxesMap[sid] || false}
                                 onEventsChanged={(events) => {
@@ -335,15 +335,15 @@ export function App(): JSX.Element {
                                     syncOffsetMapOnSource(
                                       sid,
                                       events - 1,
-                                      selectableEvents,
+                                      selectableEventsOffsets,
                                       pond,
                                     ).then((value) => {
-                                      setSelectedEvents(value)
+                                      setSelectedEventsOffsets(value)
                                       setCalculatingSync(false)
                                     })
                                   } else {
-                                    setSelectedEvents(
-                                      upsertOffsetMapValue(selectedEvents, sid, events - 1),
+                                    setSelectedEventsOffsets(
+                                      upsertOffsetMapValue(selectedEventsOffsets, sid, events - 1),
                                     )
                                   }
                                 }}
@@ -356,10 +356,10 @@ export function App(): JSX.Element {
                                   if (checked) {
                                     syncOffsetMapOnSource(
                                       sid,
-                                      selectedEvents[sid],
-                                      selectableEvents,
+                                      selectedEventsOffsets[sid],
+                                      selectableEventsOffsets,
                                       pond,
-                                    ).then(setSelectedEvents)
+                                    ).then(setSelectedEventsOffsets)
                                   }
                                 }}
                                 disabled={disabled}
@@ -416,7 +416,7 @@ export function App(): JSX.Element {
     const initialState = importedFishes[selectedFishIndex].initialState
     let fishStates = { previousState: {}, currentState: initialState }
     let lastAppliedEvent = {}
-    await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
+    await querySelectedEventsChunked(pond, selectedEventsOffsets, selectedTags, (events) => {
       fishStates = reduceTwinStateFromEvents(
         events,
         importedFishes[selectedFishIndex].onEvent,
@@ -435,14 +435,14 @@ export function App(): JSX.Element {
    */
   async function updateSelectableEvents() {
     setCalculatingOffsetLimits(true)
-    if (!allEvents) return
+    if (!allEventsOffsets) return
     let newOffsets = {}
     if (selectAllEventsChecked) {
-      newOffsets = allEvents
+      newOffsets = allEventsOffsets
     } else {
-      for (const [sid] of Object.entries(allEvents)) {
+      for (const [sid] of Object.entries(allEventsOffsets)) {
         const selectedOffset = await getLastEventOffsetBeforeTimestamp(
-          allEvents,
+          allEventsOffsets,
           sid,
           selectedTimeLimitMicros,
           pond,
@@ -450,7 +450,7 @@ export function App(): JSX.Element {
         newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
       }
     }
-    setSelectableEvents(newOffsets)
+    setSelectableEventsOffsets(newOffsets)
     setCalculatingOffsetLimits(false)
   }
 
@@ -459,14 +459,14 @@ export function App(): JSX.Element {
    */
   function applyLimitOnSelectedEvents() {
     let newOffsets = {}
-    for (const [sid, events] of Object.entries(selectableEvents)) {
-      if (selectedEvents[sid] > events) {
+    for (const [sid, events] of Object.entries(selectableEventsOffsets)) {
+      if (selectedEventsOffsets[sid] > events) {
         newOffsets = upsertOffsetMapValue(newOffsets, sid, events)
       } else {
-        newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedEvents[sid])
+        newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedEventsOffsets[sid])
       }
     }
-    setSelectedEvents(newOffsets)
+    setSelectedEventsOffsets(newOffsets)
   }
 
   /**
