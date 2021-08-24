@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Fish, OffsetMap } from '@actyx/pond'
+import { CancelSubscription, Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import {
   Typography,
@@ -103,31 +103,7 @@ export function App(): JSX.Element {
 
   //Reload the time boundaries whenever an earlier/later event arrives or the tags change
   React.useEffect(() => {
-    setEarliestEventMicros(undefined)
-    setLatestEventMicros(undefined)
-    const cancelSubscriptionOnEarliest = pond.events().observeEarliest(
-      {
-        query: tagsFromString(selectedTags),
-      },
-      (_, metadata) => {
-        setEarliestEventMicros(metadata.timestampMicros)
-        if (selectedTimeLimitMicros === 0) {
-          setSelectedTimeLimitMicros(metadata.timestampMicros)
-        }
-      },
-    )
-    const cancelSubscriptionOnLatest = pond.events().observeLatest(
-      {
-        query: tagsFromString(selectedTags),
-      },
-      (_, metadata) => {
-        setLatestEventMicros(metadata.timestampMicros)
-      },
-    )
-    return () => {
-      cancelSubscriptionOnEarliest()
-      cancelSubscriptionOnLatest()
-    }
+    return updateEventTimestampMicros()
   }, [selectedTags])
 
   //Reapply events on fishes after change of selected events
@@ -491,5 +467,40 @@ export function App(): JSX.Element {
       }
     }
     setSelectedEvents(newOffsets)
+  }
+
+  /**
+   * Uses subscription procedures to get the timestamp of the earliest and latest
+   * event that matches the currently selected tags and updates the respective application states
+   * 'earliestEventMicros' and 'latestEventMicros'. Sets 'selectedTimeLimit' to the timestamp of the
+   * earliest event if it is not set to a value > 0.
+   * @returns a CancelSubscription function that should be called after the application state was altered.
+   */
+  function updateEventTimestampMicros(): CancelSubscription {
+    setEarliestEventMicros(undefined)
+    setLatestEventMicros(undefined)
+    const cancelSubscriptionOnEarliest = pond.events().observeEarliest(
+      {
+        query: tagsFromString(selectedTags),
+      },
+      (_, metadata) => {
+        setEarliestEventMicros(metadata.timestampMicros)
+        if (selectedTimeLimitMicros === 0) {
+          setSelectedTimeLimitMicros(metadata.timestampMicros)
+        }
+      },
+    )
+    const cancelSubscriptionOnLatest = pond.events().observeLatest(
+      {
+        query: tagsFromString(selectedTags),
+      },
+      (_, metadata) => {
+        setLatestEventMicros(metadata.timestampMicros)
+      },
+    )
+    return () => {
+      cancelSubscriptionOnEarliest()
+      cancelSubscriptionOnLatest()
+    }
   }
 }
