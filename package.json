@@ -1,11 +1,8 @@
 {
   "name": "actyx-time-machine",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "",
   "main": "index.js",
-  "bin": {
-    "timeMachine": "bin/timeMachine"
-  },
   "scripts": {
     "test": "jest",
     "start": "npm run import-fishes & npm run start:serve-only",

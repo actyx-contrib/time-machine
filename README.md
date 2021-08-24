@@ -44,6 +44,10 @@ Execute `npm run start`
 
 You should now be able to access the Actyx Time Machine at `http://localhost:1234/`
 
+## Screenshot
+
+![Screenshot](https://i.imgur.com/6nt7Cu9.png)
+
 ## Known issues
 
 - The sliders for selecting the events also count events that do not match the chosen tags. This will be fixed once Actyx Query Language is integrated into this project.
