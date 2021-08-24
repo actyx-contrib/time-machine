@@ -4,6 +4,8 @@
 
 Actyx Time Machine is a graphical tool which aims to help developers troubleshoot their twins/fishes. It simulates the events that have occurred up to a selected point in time and applies them to a user-supplied twin/fish. More precisely, the selected events are given into the `onEvent`-Function of the twin/fish and the resulting state is calculated. This can help you with determining which event has led to an invalid or unexpected twin-/fish-state.
 
+![Screenshot](https://i.imgur.com/6nt7Cu9.png)
+
 ## Prerequisites
 
 - You need to have access to the TypeScript source files of your twins/fishes.
@@ -43,10 +45,6 @@ In your case, you would replace `mkTestFish('name_1')` with the constructor of y
 Execute `npm run start`
 
 You should now be able to access the Actyx Time Machine at `http://localhost:1234/`
-
-## Screenshot
-
-![Screenshot](https://i.imgur.com/6nt7Cu9.png)
 
 ## Known issues
 
