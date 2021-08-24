@@ -61,8 +61,11 @@ export function App(): JSX.Element {
 
   const pond = usePond()
 
+  //Offsets of with all existing events and sources. Filled by present()
   const [allEventsOffsets, setAllEventsOffsets] = useState<OffsetMap>()
+  //Offsets of all events that match the selected time boundary.
   const [selectableEventsOffsets, setSelectableEventsOffsets] = useState<OffsetMap>({})
+  //Offsets of the events that were selected using the event sliders of the UI. Cannot exceed the offsets of 'selectableEventsOffsets'
   const [selectedEventsOffsets, setSelectedEventsOffsets] = useState<OffsetMap>({})
 
   const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
