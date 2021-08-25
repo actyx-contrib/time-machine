@@ -1,17 +1,27 @@
+import 'regenerator-runtime'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { Pond } from '@actyx-contrib/react-pond'
 import { App } from './App'
+import { ActyxLoadingView } from './components/ActyxLoadingView'
 
 const onError = () => {
   setTimeout(() => location.reload(), 2500)
 }
 
 ReactDOM.render(
-  <React.StrictMode>
-    <Pond loadComponent={<div>Connecting to ActyxOS</div>} onError={onError}>
+  <Pond
+    loadComponent={<ActyxLoadingView />}
+    onError={onError}
+    manifest={{
+      appId: 'com.example.timemachine',
+      displayName: 'Time Machine',
+      version: '1.0',
+    }}
+  >
+    <div style={{ margin: '30px 20px' }}>
       <App />
-    </Pond>
-  </React.StrictMode>,
+    </div>
+  </Pond>,
   document.getElementById('root'),
 )

@@ -4,3 +4,9 @@ dist
 .cache
 parcel-debug-*
 src/*/release
+src/**/*.js
+*.js.map
+*.tgz
+
+.vscode/launch.json
+example-fishes.ts
