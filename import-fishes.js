@@ -8,7 +8,7 @@ const { writeFileSync, existsSync } = require('fs')
 const args = yargs.option('path', {
   type: 'string',
   demandOption: 'false',
-  default: process.env.npm_package_config_fishesfile,
+  default: process.env.npm_package_config_fishesFile,
   describe: 'Path to the .ts file which holds your fishes as a default export',
 }).argv
 
@@ -36,7 +36,7 @@ const script = `import { Fish } from '@actyx/pond'
 
 import Fishes from '${userFishImportPath}'
 
-export default function fishes(): Fish<any, any>[] {
+export function fishes(): Fish<any, any>[] {
     return Fishes()
 }
 `

@@ -35,7 +35,7 @@ export function TimeSelectionPanel({
     useState<number>(selectedTimeLimitMicros)
 
   return (
-    <Grid item container xs={12} spacing={2}>
+    <Grid item container xs={12} spacing={2} data-testid="time-slider-container">
       <Grid item container xs={12}>
         <FormControl fullWidth>
           <FormControlLabel

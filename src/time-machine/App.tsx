@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Fish, OffsetMap } from '@actyx/pond'
+import { CancelSubscription, Fish, OffsetMap } from '@actyx/pond'
 import { usePond } from '@actyx-contrib/react-pond'
 import {
   Typography,
@@ -11,8 +11,10 @@ import {
   CircularProgress,
   Checkbox,
   FormControlLabel,
+  Card,
+  CardContent,
 } from '@material-ui/core'
-import fishes from './fishes'
+import { fishes } from './fishes'
 import {
   upsertOffsetMapValue,
   getLastEventOffsetBeforeTimestamp,
@@ -32,7 +34,9 @@ import { TagsSelection } from './components/TagsSelection'
 import { dependencies } from '../../package-lock.json'
 import { CustomTooltip } from './components/CustomTooltip'
 
-const ACTYX_REFRESH_INTERVAL = 10000
+//import Actyx Refresh Interval from package.json
+const configRefreshInterval = process.env.npm_package_config_actyxPondRefreshInterval
+const ACTYX_REFRESH_INTERVAL = configRefreshInterval ? parseInt(configRefreshInterval) : 10000
 
 const sm_size = 12
 const md_size = 6
@@ -57,9 +61,12 @@ export function App(): JSX.Element {
 
   const pond = usePond()
 
-  const [allEvents, setAllEvents] = useState<OffsetMap>()
-  const [selectableEvents, setSelectableEvents] = useState<OffsetMap>({})
-  const [selectedEvents, setSelectedEvents] = useState<OffsetMap>({})
+  //Offsets of with all existing events and sources. Filled by present()
+  const [allEventsOffsets, setAllEventsOffsets] = useState<OffsetMap>()
+  //Offsets of all events that match the selected time boundary.
+  const [selectableEventsOffsets, setSelectableEventsOffsets] = useState<OffsetMap>({})
+  //Offsets of the events that were selected using the event sliders of the UI. Cannot exceed the offsets of 'selectableEventsOffsets'
+  const [selectedEventsOffsets, setSelectedEventsOffsets] = useState<OffsetMap>({})
 
   const [earliestEventMicros, setEarliestEventMicros] = useState<number>()
   const [latestEventMicros, setLatestEventMicros] = useState<number>()
@@ -83,12 +90,14 @@ export function App(): JSX.Element {
   const [currentFishState, setCurrentFishState] = useState({})
   const [previousFishState, setPreviousFishState] = useState({})
 
+  const calculating = calculatingFishState || calculatingOffsetLimits || calculatingSync
+
   //Look for new event offsets every x nanoseconds
 
   React.useEffect(() => {
-    pond.events().present().then(setAllEvents)
+    pond.events().present().then(setAllEventsOffsets)
     const refresh = setInterval(() => {
-      pond.events().present().then(setAllEvents)
+      pond.events().present().then(setAllEventsOffsets)
     }, ACTYX_REFRESH_INTERVAL)
     return () => {
       clearInterval(refresh)
@@ -97,39 +106,15 @@ export function App(): JSX.Element {
 
   //Reload the time boundaries whenever an earlier/later event arrives or the tags change
   React.useEffect(() => {
-    setEarliestEventMicros(undefined)
-    setLatestEventMicros(undefined)
-    const cancelSubscriptionOnEarliest = pond.events().observeEarliest(
-      {
-        query: tagsFromString(selectedTags),
-      },
-      (_, metadata) => {
-        setEarliestEventMicros(metadata.timestampMicros)
-        if (selectedTimeLimitMicros === 0) {
-          setSelectedTimeLimitMicros(metadata.timestampMicros)
-        }
-      },
-    )
-    const cancelSubscriptionOnLatest = pond.events().observeLatest(
-      {
-        query: tagsFromString(selectedTags),
-      },
-      (_, metadata) => {
-        setLatestEventMicros(metadata.timestampMicros)
-      },
-    )
-    return () => {
-      cancelSubscriptionOnEarliest()
-      cancelSubscriptionOnLatest()
-    }
+    return updateEventTimestampMicros()
   }, [selectedTags])
 
   //Reapply events on fishes after change of selected events
   React.useEffect(() => {
-    if (selectedEvents) {
+    if (selectedEventsOffsets) {
       updateFishStatesAndRecentEvent()
     }
-  }, [selectedEvents, selectedTags])
+  }, [selectedEventsOffsets, selectedTags])
 
   //Update tags when a new fish is selected by the user
   React.useEffect(() => {
@@ -139,24 +124,24 @@ export function App(): JSX.Element {
 
   //Update selectable events when time limit changes
   React.useEffect(() => {
-    if (!allEvents) return
+    if (!allEventsOffsets) return
 
     updateSelectableEvents()
-  }, [selectedTimeLimitMicros, selectAllEventsChecked, allEvents])
+  }, [selectedTimeLimitMicros, selectAllEventsChecked, allEventsOffsets])
 
   React.useEffect(() => {
-    if (!allEvents) return
+    if (!allEventsOffsets) return
     if (keepUpWithNewEventsChecked) {
-      setSelectedEvents(allEvents)
+      setSelectedEventsOffsets(allEventsOffsets)
     }
-  }, [allEvents, keepUpWithNewEventsChecked])
+  }, [allEventsOffsets, keepUpWithNewEventsChecked])
 
   //Update selected events when max selectable events changes
   React.useEffect(() => {
     applyLimitOnSelectedEvents()
-  }, [selectableEvents])
+  }, [selectableEventsOffsets])
 
-  if (!allEvents) {
+  if (!allEventsOffsets) {
     return <div>loading...</div>
   }
 
@@ -169,7 +154,7 @@ export function App(): JSX.Element {
           </Typography>
         </Grid>
         <Grid item xs={4}>
-          {isCalculating() ? (
+          {calculating ? (
             <Grid item>
               <CircularProgress style={{ paddingTop: '20px' }} />
             </Grid>
@@ -204,7 +189,7 @@ export function App(): JSX.Element {
                 <FormControl>
                   <InputLabel>Select from imported fishes</InputLabel>
                   <Select
-                    disabled={isCalculating()}
+                    disabled={calculating}
                     value={selectedFishIndex}
                     onChange={(event) => {
                       setSelectedFishIndex(event.target.value as number)
@@ -241,7 +226,7 @@ export function App(): JSX.Element {
               </Grid>
               <Grid item xs={10}>
                 <TagsSelection
-                  disabled={isCalculating()}
+                  disabled={calculating}
                   error={!(earliestEventMicros && latestEventMicros)}
                   selectedTags={selectedTags}
                   onChange={setSelectedTags}
@@ -269,7 +254,7 @@ export function App(): JSX.Element {
                   selectedTimeLimitMicros={selectedTimeLimitMicros}
                   earliestEventMicros={earliestEventMicros}
                   latestEventMicros={latestEventMicros}
-                  disabled={isCalculating()}
+                  disabled={calculating}
                   allEventsSelected={selectAllEventsChecked}
                   onSelectAllEventsCheckedChanged={(checked) => {
                     if (!checked) {
@@ -306,75 +291,88 @@ export function App(): JSX.Element {
                   </Typography>
                 </CustomTooltip>
               </Grid>
-              <Grid item xs={12}>
+              <Grid item container xs={12}>
                 {earliestEventMicros && latestEventMicros ? (
                   <div>
-                    <FormControl fullWidth>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={keepUpWithNewEventsChecked}
-                            onChange={(event) => {
-                              if (event.target.checked) {
-                                setSelectAllEventsChecked(true)
-                              }
-                              setKeepUpWithNewEventsChecked(event.target.checked)
-                            }}
-                            disabled={isCalculating()}
-                            color="primary"
-                          />
-                        }
-                        label={<Typography>Keep up with new events (live update)</Typography>}
-                      />
-                    </FormControl>
-                    {Object.entries(selectableEvents).map(([sid, events]) => {
-                      const disabledBySyncLock = !selectedSyncCheckboxesMap[sid] && syncChecked
-                      const disabledByCalculatingLock = isCalculating()
-                      const disabled =
-                        disabledByCalculatingLock ||
-                        disabledBySyncLock ||
-                        keepUpWithNewEventsChecked
-                      return (
-                        <SourceSlider
-                          sid={sid}
-                          numberOfSelectedEvents={selectedEvents[sid] + 1 || 0}
-                          numberOfAllEvents={events + 1}
-                          syncSelected={selectedSyncCheckboxesMap[sid] || false}
-                          onEventsChanged={(events) => {
-                            if (selectedSyncCheckboxesMap[sid]) {
-                              setCalculatingSync(true)
-                              syncOffsetMapOnSource(sid, events - 1, selectableEvents, pond).then(
-                                (value) => {
-                                  setSelectedEvents(value)
-                                  setCalculatingSync(false)
-                                },
-                              )
-                            } else {
-                              setSelectedEvents(
-                                upsertOffsetMapValue(selectedEvents, sid, events - 1),
-                              )
-                            }
-                          }}
-                          onSyncCheckboxChanged={(checked) => {
-                            setSelectedSyncCheckbox({
-                              ...selectedSyncCheckboxesMap,
-                              [sid]: checked,
-                            })
-                            setSyncChecked(checked)
-                            if (checked) {
-                              syncOffsetMapOnSource(
-                                sid,
-                                selectedEvents[sid],
-                                selectableEvents,
-                                pond,
-                              ).then(setSelectedEvents)
-                            }
-                          }}
-                          disabled={disabled}
-                          key={sid}
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={keepUpWithNewEventsChecked}
+                              onChange={(event) => {
+                                if (event.target.checked) {
+                                  setSelectAllEventsChecked(true)
+                                }
+                                setKeepUpWithNewEventsChecked(event.target.checked)
+                              }}
+                              disabled={calculating}
+                              color="primary"
+                            />
+                          }
+                          label={<Typography>Keep up with new events (live update)</Typography>}
                         />
-                      )
-                    })}
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item container xs={12}>
+                      <Card style={{ height: '22vh', overflowY: 'scroll' }}>
+                        <CardContent>
+                          {Object.entries(selectableEventsOffsets).map(([sid, events]) => {
+                            const disabledBySyncLock =
+                              !selectedSyncCheckboxesMap[sid] && syncChecked
+                            const disabledByCalculatingLock = calculating
+                            const disabled =
+                              disabledByCalculatingLock ||
+                              disabledBySyncLock ||
+                              keepUpWithNewEventsChecked
+                            return (
+                              <SourceSlider
+                                sid={sid}
+                                numberOfSelectedEvents={selectedEventsOffsets[sid] + 1 || 0}
+                                numberOfAllEvents={events + 1}
+                                syncSelected={selectedSyncCheckboxesMap[sid] || false}
+                                onEventsChanged={(events) => {
+                                  if (selectedSyncCheckboxesMap[sid]) {
+                                    setCalculatingSync(true)
+                                    syncOffsetMapOnSource(
+                                      sid,
+                                      events - 1,
+                                      selectableEventsOffsets,
+                                      pond,
+                                    ).then((value) => {
+                                      setSelectedEventsOffsets(value)
+                                      setCalculatingSync(false)
+                                    })
+                                  } else {
+                                    setSelectedEventsOffsets(
+                                      upsertOffsetMapValue(selectedEventsOffsets, sid, events - 1),
+                                    )
+                                  }
+                                }}
+                                onSyncCheckboxChanged={(checked) => {
+                                  setSelectedSyncCheckbox({
+                                    ...selectedSyncCheckboxesMap,
+                                    [sid]: checked,
+                                  })
+                                  setSyncChecked(checked)
+                                  if (checked) {
+                                    syncOffsetMapOnSource(
+                                      sid,
+                                      selectedEventsOffsets[sid],
+                                      selectableEventsOffsets,
+                                      pond,
+                                    ).then(setSelectedEventsOffsets)
+                                  }
+                                }}
+                                disabled={disabled}
+                                key={sid}
+                              />
+                            )
+                          })}
+                        </CardContent>
+                      </Card>
+                    </Grid>
                   </div>
                 ) : (
                   <TagsAlert tagsStatus={'noMatchingEvents'} />
@@ -421,20 +419,14 @@ export function App(): JSX.Element {
     const initialState = importedFishes[selectedFishIndex].initialState
     let fishStates = { previousState: {}, currentState: initialState }
     let lastAppliedEvent = {}
-    let run = false
-
-    await querySelectedEventsChunked(pond, selectedEvents, selectedTags, (events) => {
-      run = true
+    await querySelectedEventsChunked(pond, selectedEventsOffsets, selectedTags, (events) => {
       fishStates = reduceTwinStateFromEvents(
         events,
         importedFishes[selectedFishIndex].onEvent,
         fishStates.currentState,
       )
       lastAppliedEvent = events[events.length - 1]
-      console.log(`Inside callback ${JSON.stringify(fishStates)}`)
     })
-
-    console.log(`Outside callback ${JSON.stringify(fishStates)}. Callback run? ${run}`)
     setPreviousFishState(fishStates.previousState)
     setCurrentFishState(fishStates.currentState)
     setRecentEvent(lastAppliedEvent)
@@ -446,14 +438,14 @@ export function App(): JSX.Element {
    */
   async function updateSelectableEvents() {
     setCalculatingOffsetLimits(true)
-    if (!allEvents) return
+    if (!allEventsOffsets) return
     let newOffsets = {}
     if (selectAllEventsChecked) {
-      newOffsets = allEvents
+      newOffsets = allEventsOffsets
     } else {
-      for (const [sid] of Object.entries(allEvents)) {
+      for (const [sid] of Object.entries(allEventsOffsets)) {
         const selectedOffset = await getLastEventOffsetBeforeTimestamp(
-          allEvents,
+          allEventsOffsets,
           sid,
           selectedTimeLimitMicros,
           pond,
@@ -461,7 +453,7 @@ export function App(): JSX.Element {
         newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedOffset)
       }
     }
-    setSelectableEvents(newOffsets)
+    setSelectableEventsOffsets(newOffsets)
     setCalculatingOffsetLimits(false)
   }
 
@@ -470,17 +462,48 @@ export function App(): JSX.Element {
    */
   function applyLimitOnSelectedEvents() {
     let newOffsets = {}
-    for (const [sid, events] of Object.entries(selectableEvents)) {
-      if (selectedEvents[sid] > events) {
+    for (const [sid, events] of Object.entries(selectableEventsOffsets)) {
+      if (selectedEventsOffsets[sid] > events) {
         newOffsets = upsertOffsetMapValue(newOffsets, sid, events)
       } else {
-        newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedEvents[sid])
+        newOffsets = upsertOffsetMapValue(newOffsets, sid, selectedEventsOffsets[sid])
       }
     }
-    setSelectedEvents(newOffsets)
+    setSelectedEventsOffsets(newOffsets)
   }
 
-  function isCalculating(): boolean {
-    return calculatingFishState || calculatingOffsetLimits || calculatingSync
+  /**
+   * Uses subscription procedures to get the timestamp of the earliest and latest
+   * event that matches the currently selected tags and updates the respective application states
+   * 'earliestEventMicros' and 'latestEventMicros'. Sets 'selectedTimeLimit' to the timestamp of the
+   * earliest event if it is not set to a value > 0.
+   * @returns a CancelSubscription function that should be called after the application state was altered.
+   */
+  function updateEventTimestampMicros(): CancelSubscription {
+    setEarliestEventMicros(undefined)
+    setLatestEventMicros(undefined)
+    const cancelSubscriptionOnEarliest = pond.events().observeEarliest(
+      {
+        query: tagsFromString(selectedTags),
+      },
+      (_, metadata) => {
+        setEarliestEventMicros(metadata.timestampMicros)
+        if (selectedTimeLimitMicros === 0) {
+          setSelectedTimeLimitMicros(metadata.timestampMicros)
+        }
+      },
+    )
+    const cancelSubscriptionOnLatest = pond.events().observeLatest(
+      {
+        query: tagsFromString(selectedTags),
+      },
+      (_, metadata) => {
+        setLatestEventMicros(metadata.timestampMicros)
+      },
+    )
+    return () => {
+      cancelSubscriptionOnEarliest()
+      cancelSubscriptionOnLatest()
+    }
   }
 }
