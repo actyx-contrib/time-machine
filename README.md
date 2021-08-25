@@ -36,7 +36,7 @@ In your case, you would replace `mkTestFish('name_1')` with the constructor of y
 
 ```json
 "config": {
-    "fishesfile": "./your-file.ts",
+    "fishesFile": "./your-file.ts",
   },
 ```
 
@@ -48,4 +48,6 @@ You should now be able to access the Actyx Time Machine at `http://localhost:123
 
 ## Known issues
 
-- The sliders for selecting the events also count events that do not match the chosen tags. This will be fixed once Actyx Query Language is integrated into this project.
+- The sliders for selecting the events also count events that do not match the chosen tags. This results in a higher number of shown events than relevant to the selected fish. Will be fixed once Actyx Query Language is integrated into this project.
+
+- The forward and backward buttons for selecting the events may show unexpected behavior when sync is enabled. This is related to events having a different ordering when sorted by clock-timestamp compared to when sorted by lamport-timestamp. Will also be fixed once Actyx Query Language is integrated into this project.
