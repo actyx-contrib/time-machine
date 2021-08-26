@@ -278,7 +278,7 @@ export function reduceTwinStateFromEvents(
   return events.reduce(
     (state, { payload, meta }) => {
       return {
-        previousState: state.currentState,
+        previousState: JSON.parse(JSON.stringify(state.currentState)), // clone previous state in case it gets mutated in onEvent
         currentState: onEventFn(state.currentState, payload, meta),
       }
     },
