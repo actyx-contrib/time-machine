@@ -1,4 +1,5 @@
 import { ActyxEvent, EventsSortOrder, OffsetMap, Pond, Tags, Where } from '@actyx/pond'
+import cloneDeep  from 'lodash.clonedeep'
 
 //import Actyx Query Chunk Size from package.json
 const configQueryChunkSize = process.env.npm_package_config_actyxPondQueryChunkSize
@@ -278,7 +279,7 @@ export function reduceTwinStateFromEvents(
   return events.reduce(
     (state, { payload, meta }) => {
       return {
-        previousState: state.currentState,
+        previousState: cloneDeep(state.currentState), // clone previous state in case it gets mutated in onEvent
         currentState: onEventFn(state.currentState, payload, meta),
       }
     },
